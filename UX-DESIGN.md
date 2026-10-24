@@ -47,6 +47,18 @@ The October 21 wireframe revision simplifies the presentation and makes repeated
 - Sign Up Error was added as page 5, Change Photo as page 23, and the expanded Saved tracker example is now source page 24. Affected page names, documentation references, XML, and PNG exports were updated.
 - During the full PNG refresh, the invisible New Post group on page 15 was tightened from 410.45 × 696px to its children’s 326 × 360px bounds. Its visible panel, text, and controls were not moved or resized. This removes blank export space and keeps the screen at the same scale as the other wireframes. All 24 PNGs now match the drawing/XML; the app map was also re-exported.
 
+### October 24 phone-height update
+
+The prototype target is the iPhone 14/15 Pro preset at **393 × 852** in portrait. Source widths stay **360px**, and exported screen PNGs stay **362px** wide. Short sources now have a **785px minimum height**; the actual draw.io renderer produced 362 × 785 PNGs for the calibration screen. This covers the full phone viewport when scaled proportionally by width (`785 × 393 / 362 ≈ 852.22`). A 784px source produced a 784px PNG and did not cover that viewport.
+
+- Pages **01–05, 09–10, 20, and 21** were extended to 785px by adding space below their existing content. Text, controls, cards, and image placeholders retain their positions and dimensions.
+- Page **10** has a taller full-screen shade; its unchanged 456px Filters panel moves down to stay against the bottom edge. Its child positions and dimensions are unchanged.
+- The vertical timeline connectors are removed on pages **17–19**, including the dimmed popup backgrounds. Square stage markers, labels, and dates remain unchanged.
+- The other source heights remain unchanged. Page **24** still shows four Saved applications as the expanded state; the default preview stays at two.
+- The twelve affected PNGs and the matching XML copy are refreshed. No page names, page ordering, navigation states, or app-map artwork changed in this update.
+
+The Figma assembler should use the same 393 × 852 outer viewport for every screen, proportionally fit each PNG to its width, enable clipping/vertical overflow for taller content, and keep the device outline stationary. Notch, status-bar, and home-indicator clearance belongs in Figma rather than new top padding in the source drawings. Safe-area insets may reduce the inner viewport enough to require a small amount of scrolling even on an otherwise short screen. Image and hotspot layers must scroll together. Live device presentation, safe areas, and interactions remain unverified until the Figma assembler tests them; see the [phone-height plan](./ux-design/prototype/PHONE-HEIGHT-PLAN.md) and [product glossary](./CONTEXT.md).
+
 ### Review status and deferred work
 
 The remaining manual design work is deferred at the user's request, rather than counted as completed assignment coverage. This includes open selector menus; visible results of saving a job, updating a stage, posting, removing, saving notes/profile changes, and changing filters; and the phone frame. Camera, album browsing, and selected-photo preview screens are outside the agreed scope.
@@ -66,7 +78,7 @@ Remaining findings:
 
 Some notes that apply to all of the wireframes:
 
-- They're all designed for a mobile screen, with a 360px source screen width and consistent 362px PNG exports including the outline. Heights change depending on how much content a screen has, and longer screens scroll within a consistent phone viewport in the prototype.
+- They're all designed for a mobile screen, with a 360px source screen width and consistent 362px PNG exports including the outline. Source heights are at least 785px and can increase to fit content. Longer images scroll within the consistent 393 × 852 phone viewport in the intended prototype.
 - The header, with the logo on the left and the menu button (three lines) on the right, sits in the same spot on every screen. The menu button only shows up once the user is logged in.
 - Gray boxes are placeholders for images, like company logos and user photos.
 - Underlined text is a link. Dark buttons are the main action on a screen, and outlined buttons are secondary actions.
