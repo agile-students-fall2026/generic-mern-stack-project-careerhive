@@ -1,6 +1,6 @@
 # CareerHive prototype handoff
 
-Prepared October 21, 2026 for the teammate assembling the updated draw.io screens in Figma.
+Updated October 24, 2026 for the teammate assembling the updated draw.io screens in Figma.
 
 ## What is ready, and what you own
 
@@ -15,6 +15,22 @@ The saved drawing has **24 tabs/screens**, with matching individual PNGs and XML
 - [Existing prototype viewing link](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=1-2&starting-point-node-id=1-2) — pending refresh.
 
 Use the descriptive screen name to match old and new assets. **Old page 5 was Profile Setup; new page 5 is Sign Up Error.** Replacing pictures by number alone will put the wrong screens into the prototype. These are draw.io tabs and prototype states; no new main app-navigation section has been added.
+
+## October 24 height update — import these refreshed images
+
+The phone-height branch is `0a-wireframe-phone-height-david`. It retains the same 24 page/file names and the existing navigation map below. Replace the updated image fills by descriptive name and recheck Filters-panel hotspots after its bottom-anchor movement.
+
+| Refreshed page | Change |
+| --- | --- |
+| 01 Welcome; 02 Log In; 03 Log In Error; 04 Sign Up; 05 Sign Up Error | Source height 640 → 785px; content positions and sizes preserved. |
+| 09 Browse Jobs; 10 Browse Jobs Filters | Source height 732 → 785px. Filters shade expands; its 456px panel moves from y=276 to y=329, retaining child geometry. |
+| 17 Application Details; 18 Update Stage; 19 Remove confirmation | Timeline connector removed in each state; square markers/text and the 796px source height remain unchanged. |
+| 20 Deadlines | Source height 640 → 785px; all three deadline rows remain unchanged. |
+| 21 My Profile | Source height 760 → 785px; all content positions remain unchanged. |
+
+Other screen heights and assets are unchanged. Page 24 remains the four-item **expanded Saved** example. The source width remains 360px and PNG width 362px. Renderer calibration verified a 785px source produces a 362 × 785 image; the prior 784px test failed the viewport coverage check. All final screen exports must be at least 785px tall.
+
+Use an iPhone 14/15 Pro **393 × 852** outer frame for every prototype state. At that width, a 362 × 785 PNG scales to about 852.22px high. Handle notch/status-bar/home-indicator spacing in Figma without shifting the source artwork. Any necessary inner viewport inset reduces the visible content area; retain proportional image height and scroll as needed. The source-height floor and minimum image size are asset checks, not proof that the live prototype or device settings have been tested.
 
 ## Changes included
 
@@ -111,11 +127,11 @@ Fixed phone presentation / device exterior
     Full-height screen PNG + matching hotspot layers (scroll together)
 ```
 
-Use one phone-sized viewport throughout, preferably the team's existing preset. Scale every 362px-wide PNG proportionally to the viewport width and leave its full height extending below the viewport. Keep the phone exterior outside the scrolling content. The current screenshots' varying heights are allowed by Part 0A; prototype viewport dimensions should stay consistent.
+Use the agreed iPhone 14/15 Pro portrait viewport, 393 × 852, throughout. Scale every 362px-wide PNG proportionally to the viewport width and leave its full height extending below the viewport. Keep the phone exterior outside the scrolling content. The current screenshots' varying heights are allowed by Part 0A; prototype viewport dimensions should stay consistent.
 
 The simplest choice is to let Figma present the device exterior. If custom artwork is wanted, draw it separately in draw.io and import it as a separate fixed presentation layer. For static phone-framed submission images, a separate presentation export is possible, but preserve the existing screen-only assets for the prototype. If framing changes submission export dimensions, standardize the whole set together. Keep UI controls square and check any device-shell treatment against the professor's no-rounded-edges feedback.
 
-Set the viewport's Prototype → Scroll behavior → Overflow to Vertical and enable Clip content. Content must exceed the viewport height. Keep hotspots in the same scrolling container as their controls. A header embedded in one full-page PNG cannot independently stay fixed without separating its artwork. Check camera-notch/status-bar clearance. [Figma scrolling reference](https://help.figma.com/hc/en-us/articles/360039818734-Prototype-scroll-and-overflow-behavior), [course Figma notes](https://knowledge.kitchen/content/courses/software-engineering/figma-essentials/).
+Set the viewport's Prototype → Scroll behavior → Overflow to Vertical and enable Clip content. Content must exceed the viewport height. Keep hotspots in the same scrolling container as their controls. A header embedded in one full-page PNG cannot independently stay fixed without separating its artwork. The Figma assembler handles camera-notch/status-bar/home-indicator clearance using presentation spacing, with the source layouts preserved. [Figma scrolling reference](https://help.figma.com/hc/en-us/articles/360039818734-Prototype-scroll-and-overflow-behavior), [course Figma notes](https://knowledge.kitchen/content/courses/software-engineering/figma-essentials/).
 
 ## Requirements status and outstanding decisions
 
@@ -150,6 +166,6 @@ Deferred design queue: open pickers/selectors; after-save job button/stage; upda
 
 Local assets are ready for teammate review. This does **not** mean all professor feedback or Sprint 0A–0D requirements are finished. Keep any review PR a Draft until its intended scope is agreed; do not describe it as final submission approval.
 
-The assets and this handoff belong to feature branch `0a-wireframes-feedback-cleanup-david`. The next owner should use this branch when receiving the updated files and match screens using the table above. The user creates any PR themselves; no PR is created by the agent.
+This height update belongs to feature branch `0a-wireframe-phone-height-david`; the earlier feedback cleanup is already merged into master. The next owner should use this branch when receiving the updated files and match screens using the table above. The user creates any PR themselves; no PR is created by the agent.
 
 Branch naming follows the team’s assignment-topic-author convention. Future commit messages must be one short line with no body.
