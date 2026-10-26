@@ -47,6 +47,10 @@ A typical CareerHive user goes through these steps:
 6. They update the application's stage as they hear back, and add notes along the way.
 7. They check Home and Deadlines to see what needs their attention next.
 
+## Project History
+
+CareerHive began as a team project for NYU's Agile Development and DevOps course. The team focused on helping students and recent graduates organize a job search spread across job boards, deadlines, and application updates. During Sprint 0, the team defined the MVP and created an app map, mobile wireframes, and a Figma prototype to explore the core user journey.
+
 ## Team
 
 CareerHive is being developed by:
@@ -54,14 +58,24 @@ CareerHive is being developed by:
 - [Myra Rafiq](https://www.linkedin.com/in/myrarafiq/) ['myrarafiq'](https://github.com/myrarafiq)
 - Tony Zhou ['TonyyZhou'](https://github.com/TonyyZhou)
 - [Abubakar Diallo](https://www.linkedin.com/in/dialloni/) ['Dialloni'](https://github.com/Dialloni) 
+- David Wang ['chocolatechipscookiecrumbles'](https://github.com/chocolatechipscookiecrumbles)
 
+## Contributing
+
+Read the [contribution guide](./CONTRIBUTING.md) for team norms, the Git workflow, review requirements, and local setup instructions.
+
+## Project Status and Documentation
+
+CareerHive is currently in the design stage. The front-end and back-end directories contain placeholders, so there are no application build or test commands yet. We will add those commands when implementation begins.
+
+See [UX-DESIGN.md](./UX-DESIGN.md) for the app map, wireframes, Figma prototype link, and outstanding design and prototype checks.
 
 ## Repository Structure
 
 ```
 CareerHive/
-├── front-end/       # React front-end application
-├── back-end/        # Express back-end application
+├── front-end/       # Planned React front end; placeholder
+├── back-end/        # Planned Express back end; placeholder
 ├── ux-design/       # App map, wireframes, and UX design files
 ├── README.md
 ├── CONTRIBUTING.md
