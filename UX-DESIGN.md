@@ -8,21 +8,28 @@ This document has the app map and wireframes for the Minimum Viable Product (MVP
 
 ## Prototype
 
-Prototype assembly owner: use the [navigation and asset handoff](./ux-design/prototype/HANDOFF.md) for the complete rename map, new screen connections, phone/scroll setup, and pending acceptance checks.
+**[View the clickable prototype on Figma](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=75-3&starting-point-node-id=75-3)**
 
-**Prototype refresh pending:** All 24 wireframe PNGs and the app map have been regenerated from the latest saved sources with the current page names. The wireframe exports match their source pages and use a consistent 362px width. Replace the corresponding images in the linked Figma prototype and retest its interactions before treating it as synchronized with these wireframes.
+The prototype was built in [Figma](https://www.figma.com/prototyping/) using all 24 wireframes below as its screens ([editor view](https://www.figma.com/design/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype), page **Prototype (Oct 26)**). It starts on the **Welcome** screen. The October 18 version built from the old 21 wireframes is kept on a separate archive page.
 
-**[View the clickable prototype on Figma](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=1-2&starting-point-node-id=1-2)**
+**October 26 refresh (after presentation feedback):**
 
-The prototype was built in [Figma](https://www.figma.com/prototyping/) using the wireframes below as its screens ([editor view](https://www.figma.com/design/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype)). It starts on the **Welcome** screen.
+- Every screen is a 393 × 852 frame, presented inside Figma's iPhone 16 device frame. Each wireframe is scaled to the phone width, and taller screens scroll inside the phone instead of being squeezed.
+- A fixed 54px status-bar area at the top keeps content clear of the camera notch. Short screens (Welcome, Log In, Sign Up, Browse Jobs, Deadlines, My Profile and their error states) fit the phone exactly with no scrolling; only empty space below their content was trimmed. Longer screens keep 34px of space at the bottom so the last control clears the home indicator.
+- Filters is shown as a bottom sheet: the dimmed Browse Jobs background stays in the same place, and the panel sits against the bottom of the phone.
+- All clickable areas were rebuilt from the coordinates in `wireframes.drawio.xml`, so they line up with the updated layouts.
 
-The following describes the intended interaction behavior; it is a checklist for the pending prototype refresh, rather than a verified statement about the current Figma file:
+How the prototype behaves:
 
-- Every button and link that moves between screens should be clickable, including the menu on every logged-in screen.
-- Pop-ups and overlays should open and close: the menu, filters, Save to Tracker, AI Match analysis, New Post, Update Stage, Remove confirmation, and Change Photo. Include the new Sign Up Error state in the account flow.
-- Tapping "Log In" the first time shows the error screen, so both versions of Log In can be seen. Tapping "Log In" again goes to Home.
+- Every button and link that moves between screens is clickable, including the menu and logo on every logged-in screen.
+- Pop-ups and overlays open and close: the menu, filters, Save to Tracker, AI Match analysis, New Post, Update Stage, Remove confirmation, and Change Photo. Tapping the dimmed area closes the menu and filters.
+- Tapping "Log In" the first time shows the error screen; tapping it again goes to Home. "Create Account" works the same way: it first shows Sign Up Error, then goes on to Profile Setup.
 - Closing the menu returns to whichever screen it was opened from.
-- Longer screens scroll.
+- Each Home stage tile opens My Tracker. In My Tracker, "Show 2 more" under Saved opens the expanded Saved list, and "Show less" collapses it again.
+- My Profile → Edit Profile → Change photo opens the Change Photo pop-up. Close, Cancel and Update return to Edit Profile.
+- "Apply on Company Site" opens a placeholder external link, because the app sends users to the company's own listing.
+- Every job card opens the one Job Details example, and every application opens the one Application Details example. Only one example of each was drawn.
+- Not wired yet, because their result screens have not been designed: Sort, the filter tags, Clear all, the Deadlines tabs, Show 4 more / Show 1 more, Save Notes, topic and stage dropdowns, Take Photo Now, and Choose from Album.
 
 ## App Map
 
@@ -70,7 +77,7 @@ Remaining findings:
 - Browse's plain “Sort: Best match” text on pages 9–10 is not underlined or boxed, despite opening a selector. Give it the same clear interactive treatment as the other selectors when manual design resumes.
 - The three-line menu and dropdown-arrow symbols remain. Review these against Part 0A's prohibition on icons; text controls are the strictest interpretation. No decorative images or actual logo artwork are used.
 - Deadline tabs (This Month/All), search and filtered results, discussion-topic results, and empty-data behavior need explicit state coverage review alongside the deferred result screens. Browse shows four example cards for 24 opportunities; document or demonstrate how the remaining items are reached. If Home lists should also be limited to two, its current three-deadline example needs a separate adjustment.
-- Refresh Figma images and hotspots, then verify a consistent phone viewport, scrolling, overlay behavior, all navigation paths, and public view access. Local drawing checks do not verify these interactions. The [Figma course notes](https://knowledge.kitchen/content/courses/software-engineering/figma-essentials/) also call out frame containment and camera-notch clearance.
+- The Figma prototype was refreshed on October 26 with all 24 screens, the phone viewport, scrolling, and rebuilt hotspots (see [Prototype](#prototype)).
 
 ## Wireframes
 

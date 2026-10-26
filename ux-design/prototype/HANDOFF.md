@@ -12,7 +12,7 @@ The saved drawing has **24 tabs/screens**, with matching individual PNGs and XML
 - [App-map source](../app-map.drawio.xml) and [PNG](../app-map.drawio.png).
 - [Screen behavior and design rationale](../../UX-DESIGN.md).
 - [Figma editor](https://www.figma.com/design/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype) — requires edit access.
-- [Existing prototype viewing link](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=1-2&starting-point-node-id=1-2) — pending refresh.
+- [Prototype viewing link](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=75-3&starting-point-node-id=75-3) — refreshed October 26 on the "Prototype (Oct 26)" page.
 
 Use the descriptive screen name to match old and new assets. **Old page 5 was Profile Setup; new page 5 is Sign Up Error.** Replacing pictures by number alone will put the wrong screens into the prototype. These are draw.io tabs and prototype states; no new main app-navigation section has been added.
 
@@ -138,7 +138,7 @@ Set the viewport's Prototype → Scroll behavior → Overflow to Vertical and en
 | Requirement | Current evidence / remaining work |
 | --- | --- |
 | Professor: same sizing, simpler square UI, consistent previews | Source width, export width, square shapes, tracker card spacing, preview counts, and hidden empty Offer group verified locally. Home's three-deadline preview is documented separately. |
-| Professor: phone exterior, smooth navigation, consistent mobile viewport | Phone frame still deferred. Figma viewport, scrolling, hotspot accuracy, and navigation remain unverified and belong to prototype assembly. |
+| Professor: phone exterior, smooth navigation, consistent mobile viewport | Done October 26: 393 × 852 frames in the iPhone 16 device frame, vertical scrolling, fixed status-bar inset, and 122 hotspots rebuilt from the drawio coordinates and checked in play mode. |
 | Professor: explain design choices | Rationale recorded in UX-DESIGN.md and above. |
 | 0A: mobile layout, consistent placement, individual PNGs and source, descriptions, app hierarchy | Local checks pass; all 24 PNGs match source/XML. App-map hierarchy and source/export were checked. |
 | 0A: no decorative images/icons, clear links | Grayscale placeholders/plain text retained. Review remaining menu/picker symbols against the strict no-icons instruction. Browse Sort on 09–10 is plain text without underline/box and needs a clearer control treatment. |
