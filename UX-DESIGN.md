@@ -10,7 +10,7 @@ This document has the app map and wireframes for the Minimum Viable Product (MVP
 
 **[View the clickable prototype on Figma](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=75-3&starting-point-node-id=75-3)**
 
-The prototype was built in [Figma](https://www.figma.com/prototyping/) using all 24 wireframes below as its screens ([editor view](https://www.figma.com/design/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype), page **Prototype (Oct 26)**). It starts on the **Welcome** screen. The October 18 version built from the old 21 wireframes is kept on a separate archive page.
+The prototype was built in [Figma](https://www.figma.com/prototyping/) using all 24 wireframes below as its screens ([editor view](https://www.figma.com/design/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype), page **Prototype (Oct 26)**). It starts on the **Welcome** screen.
 
 **October 26 refresh (after presentation feedback):**
 
