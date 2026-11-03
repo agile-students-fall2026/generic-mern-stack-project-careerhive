@@ -1,11 +1,11 @@
 import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import ProfileContext from "./ProfileContext";
-import "./ProfileContext.css";
+import "./ProfileSetup.css"
 
 const ProfileSetup = () => {
-  const { profile, setProfile } = useContext(ProfileContext);
-  const navigate = useNavigate();
+  const profile = useContext(ProfileContext)
+  const navigate = useNavigate()
 
   const skipProfile = () => {
     navigate("/home");
@@ -21,6 +21,11 @@ const ProfileSetup = () => {
             <input className="profile-input" type="text" value={profile.major} readOnly />
         </label>
 
+        <label className="profile-label">
+            Graduation date
+            <input className="profile-input" type="text" value={profile.graduationDate} readOnly />
+        </label>
+
         <section className="profile-section">
             <h2 className="profile-label">Skills</h2>
             <ul className="profile-tags">
@@ -33,7 +38,7 @@ const ProfileSetup = () => {
         <section className="profile-section">
             <h2 className="profile-label">Looking For</h2>
             <label className="profile-choice">
-                <input type="checkbox" checked={profile.lookingFor.includes("Internships")} />
+                <input type="checkbox" defaultChecked={profile.lookingFor.includes("Internships")} />
                 Internships
             </label>
         </section>
@@ -49,8 +54,7 @@ const ProfileSetup = () => {
 
         <label className="profile-label">
             Work Authorization
-            <input className="profile-input" type="text" value={profile.workAuthorization.join(", ")} readOnly />
-        </label>
+        <input className="profile-input" type="text" value={profile.workAuthorization} readOnly />        </label>
 
         <button className="profile-save" type="button">Save and Continue</button>
         <button className="profile-skip" type="button" onClick={skipProfile}>Skip for now</button>

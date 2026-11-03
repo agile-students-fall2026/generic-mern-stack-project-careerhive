@@ -10,7 +10,7 @@ const filledProfile = {
     skills: ["Python", "JavaScript", "React", "Node.js", "SQL"],
     lookingFor: ["Internships"],
     locations: ["New York City", "Remote"],
-    workAuthorization: ["F-1 Visa"],
+    workAuthorization: "F-1 Visa",
 }
 
 //empty profile for testing purposes
@@ -26,7 +26,7 @@ const emptyProfile = {
     skills: [],
     lookingFor: [],
     locations: [],
-    workAuthorization: [],
+    workAuthorization: "",
 }
 
 export { filledProfile, emptyProfile }

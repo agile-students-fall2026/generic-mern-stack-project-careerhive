@@ -4,7 +4,7 @@ import ProfileContext from "./ProfileContext";
 import "./MyProfile.css";
 
 const MyProfile = () => {
-  const { profile } = useContext(ProfileContext);
+    const profile = useContext(ProfileContext)
   
   return (
     <main className="my-profile">
