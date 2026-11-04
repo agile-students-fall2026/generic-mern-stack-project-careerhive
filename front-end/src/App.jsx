@@ -1,24 +1,89 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import ProfileSetup from './ProfileSetup';
 import MyProfile from './MyProfile';
+import { useEffect, useState } from 'react'
+import { getJob, getJobs } from './jobs/api.js'
+import { getJobHref, parseJobRoute } from './jobs/routes.js'
+import { DEFAULT_FILTERS } from './jobs/browse.js'
+import BrowseJobs from './pages/BrowseJobs.jsx'
+import JobDetails from './pages/JobDetails.jsx'
 
 function App() {
+  const [hash, setHash] = useState(() => window.location.hash)
+  const [attempt, setAttempt] = useState(0)
+  const [resources, setResources] = useState({ browse: null, details: null })
+  const [browseFilters, setBrowseFilters] = useState(DEFAULT_FILTERS)
+  const route = parseJobRoute(hash)
+  const requestKey = `${route.kind}:${route.id ?? ''}`
+  const resource = resources[route.kind]
+  const current = resource?.key === requestKey ? resource : { status: 'loading', data: null }
+  const browseLoaded = route.kind === 'browse' && current.status === 'ready'
+
+  useEffect(() => {
+    function updateRoute() {
+      setHash(window.location.hash)
+      window.scrollTo(0, 0)
+    }
+    window.addEventListener('hashchange', updateRoute)
+    return () => window.removeEventListener('hashchange', updateRoute)
+  }, [])
+
+  useEffect(() => {
+    if (route.kind === 'unknown' || browseLoaded) return
+    const controller = new AbortController()
+    let active = true
+    const request = route.kind === 'details'
+      ? getJob(route.id, { signal: controller.signal })
+      : getJobs({ signal: controller.signal })
+    request.then((data) => {
+      if (active) {
+        setResources((previous) => ({
+          ...previous, [route.kind]: { key: requestKey, status: 'ready', data },
+        }))
+      }
+    }, () => {
+      if (active) {
+        setResources((previous) => ({
+          ...previous, [route.kind]: { key: requestKey, status: 'error', data: null },
+        }))
+      }
+    })
+    return () => { active = false; controller.abort() }
+  }, [requestKey, route.kind, route.id, attempt, browseLoaded])
+
+  function retry() {
+    setResources((previous) => ({ ...previous, [route.kind]: null }))
+    setAttempt((value) => value + 1)
+  }
+
   return (
     <Router>
     <main className="app">
-        <Routes>
-          <Route path="/" element={
-            <div>
-              <h1>CareerHive</h1>
-              <p><Link to="/profile-setup">Profile Setup</Link></p>
-              <p><Link to="/profile">My Profile</Link></p>
-            </div>
-          } />
-          <Route path="/profile-setup" element={<ProfileSetup />} />
-          <Route path="/profile" element={<MyProfile />} />
-          <Route path="/home" element={<h1>Home </h1>} />
-          <Route path="/edit-profile" element={<h1>Edit Profile</h1>} />
-        </Routes>
+
+    
+    <header className="app-header">
+    <a href="#/jobs" aria-label="CareerHive — Browse Jobs">CareerHive</a>
+    <span>Demo</span>
+    </header>
+    <p className="demo-notice">Fictional listings. Application links open example pages.</p>
+    {path === '/profile-setup' ? (
+        <ProfileSetup />
+    ) : path === '/profile' ? (
+        <MyProfile />
+    ) : path === '/home' ? (
+        <h1>Home</h1>
+    ) : path === '/edit-profile' ? (
+        <h1>Edit Profile</h1>
+    ) : route.kind === 'browse' ? (
+        <BrowseJobs jobs={current.data ?? []} status={current.status} onRetry={retry} getJobHref={getJobHref}
+            filters={browseFilters} onFiltersChange={setBrowseFilters} />
+    ) : route.kind === 'details' ? (
+        <JobDetails job={current.data} status={current.status} onRetry={retry} />
+    ) : (
+        <section className="browse-state"><h1>Page not found</h1><a href="#/jobs">Back to jobs</a></section>
+    )}
+
+
     </main>
     </Router>
   )
