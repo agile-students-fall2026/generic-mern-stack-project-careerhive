@@ -1,4 +1,4 @@
-import { useAppState } from '../data/useAppState.js'
+import { useAppState } from '../data/AppState.jsx'
 
 function MyProfile() {
     const appState = useAppState()

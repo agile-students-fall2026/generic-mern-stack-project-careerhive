@@ -2,12 +2,19 @@ import { useEffect, useState } from 'react'
 import { getJob, getJobs } from './jobs/api.js'
 import { getJobHref, parseJobRoute } from './jobs/routes.js'
 import { DEFAULT_FILTERS } from './jobs/browse.js'
+import { useAppState } from './data/AppState.jsx'
+
+import Welcome from './pages/Welcome.jsx'
+import LogIn from './pages/LogIn.jsx'
+import SignUp from './pages/SignUp.jsx'
+import ProfileSetup from './pages/ProfileSetup.jsx'
+import Home from './pages/Home.jsx'
+import MyProfile from './pages/MyProfile.jsx'
+import EditProfile from './pages/EditProfile.jsx'
 import BrowseJobs from './pages/BrowseJobs.jsx'
 import JobDetails from './pages/JobDetails.jsx'
-import { useAppState } from './data/AppState.jsx'
-import EditProfile from './pages/EditProfile.jsx'
-import MyProfile from './pages/MyProfile.jsx'
 import Tracker from './pages/Tracker.jsx'
+
 
 function App() {
   const [hash, setHash] = useState(() => window.location.hash)
@@ -18,21 +25,33 @@ function App() {
     details: null,
   })
 
-  const [browseFilters, setBrowseFilters] = useState(DEFAULT_FILTERS)
-  const [browseQuery, setBrowseQuery] = useState('')
-  const [browseSort, setBrowseSort] = useState('best-match')
+  const [browseFilters, setBrowseFilters] =
+    useState(DEFAULT_FILTERS)
 
-  const [matchResource, setMatchResource] = useState({
-    status: 'loading',
-  })
+  const [browseQuery, setBrowseQuery] =
+    useState('')
+
+  const [browseSort, setBrowseSort] =
+    useState('best-match')
+
+  const [matchResource, setMatchResource] =
+    useState({
+      status: 'loading',
+    })
 
   const appState = useAppState()
 
-  const path = hash.replace(/^#/, '') || '/'
-  const route = parseJobRoute(hash)
+  const path =
+    hash.replace(/^#/, '') || '/'
 
-  const requestKey = `${route.kind}:${route.id ?? ''}`
-  const resource = resources[route.kind]
+  const route =
+    parseJobRoute(hash)
+
+  const requestKey =
+    `${route.kind}:${route.id ?? ''}`
+
+  const resource =
+    resources[route.kind]
 
   const current =
     resource?.key === requestKey
@@ -46,7 +65,8 @@ function App() {
     route.kind === 'browse' &&
     current.status === 'ready'
 
-  const profile = appState?.profile ?? null
+  const profile =
+    appState?.profile ?? null
 
   useEffect(() => {
     function updateRoute() {
@@ -54,10 +74,16 @@ function App() {
       window.scrollTo(0, 0)
     }
 
-    window.addEventListener('hashchange', updateRoute)
+    window.addEventListener(
+      'hashchange',
+      updateRoute
+    )
 
     return () => {
-      window.removeEventListener('hashchange', updateRoute)
+      window.removeEventListener(
+        'hashchange',
+        updateRoute
+      )
     }
   }, [])
 
@@ -69,7 +95,9 @@ function App() {
       return
     }
 
-    const controller = new AbortController()
+    const controller =
+      new AbortController()
+
     let active = true
 
     const request =
@@ -135,11 +163,15 @@ function App() {
 
     let active = true
 
-    appState.matchFor(route.id).then((nextResource) => {
-      if (active) {
-        setMatchResource(nextResource)
-      }
-    })
+    appState
+      .matchFor(route.id)
+      .then((nextResource) => {
+        if (active) {
+          setMatchResource(
+            nextResource
+          )
+        }
+      })
 
     return () => {
       active = false
@@ -157,43 +189,52 @@ function App() {
       [route.kind]: null,
     }))
 
-    setAttempt((value) => value + 1)
+    setAttempt(
+      (value) => value + 1
+    )
   }
 
   function saveCurrentJobToTracker({
     stage,
     note,
   }) {
-    if (!appState?.addApplication) {
+    if (
+      !appState?.addApplication
+    ) {
       return {
         ok: false,
-        message: 'Tracker is currently unavailable.',
+        message:
+          'Tracker is currently unavailable.',
       }
     }
 
     if (!current.data?.id) {
       return {
         ok: false,
-        message: 'Job information is unavailable.',
+        message:
+          'Job information is unavailable.',
       }
     }
 
-    const saved = appState.addApplication(
-      current.data.id,
-      stage,
-      note.trim()
-    )
+    const saved =
+      appState.addApplication(
+        current.data.id,
+        stage,
+        note.trim()
+      )
 
     if (!saved) {
       return {
         ok: false,
-        message: 'This job is already in your Tracker.',
+        message:
+          'This job is already in your Tracker.',
       }
     }
 
     return {
       ok: true,
-      message: 'Job saved to Tracker.',
+      message:
+        'Job saved to Tracker.',
     }
   }
 
@@ -201,8 +242,8 @@ function App() {
     <main className="app">
       <header className="app-header">
         <a
-          href="#/jobs"
-          aria-label="CareerHive — Browse Jobs"
+          href="#/welcome"
+          aria-label="CareerHive"
         >
           CareerHive
         </a>
@@ -214,56 +255,106 @@ function App() {
         Fictional listings. Application links open example pages.
       </p>
 
-      {path === '/profile' ? (
+      {path === '/' ||
+      path === '/welcome' ? (
+        <Welcome />
+
+      ) : path === '/login' ? (
+        <LogIn />
+
+      ) : path === '/signup' ? (
+        <SignUp />
+
+      ) : path === '/profile-setup' ? (
+        <ProfileSetup />
+
+      ) : path === '/home' ? (
+        <Home />
+
+      ) : path === '/profile' ? (
         <MyProfile />
+
       ) : path === '/profile/edit' ? (
         <EditProfile />
+
       ) : path === '/tracker' ? (
         <Tracker />
+
       ) : route.kind === 'browse' ? (
         <BrowseJobs
-          jobs={current.data ?? []}
-          status={current.status}
+          jobs={
+            current.data ?? []
+          }
+          status={
+            current.status
+          }
           onRetry={retry}
-          getJobHref={getJobHref}
-          filters={browseFilters}
-          onFiltersChange={setBrowseFilters}
+          getJobHref={
+            getJobHref
+          }
+          filters={
+            browseFilters
+          }
+          onFiltersChange={
+            setBrowseFilters
+          }
           profile={profile}
-          query={browseQuery}
-          onQueryChange={setBrowseQuery}
-          sort={browseSort}
-          onSortChange={setBrowseSort}
+          query={
+            browseQuery
+          }
+          onQueryChange={
+            setBrowseQuery
+          }
+          sort={
+            browseSort
+          }
+          onSortChange={
+            setBrowseSort
+          }
         />
+
       ) : route.kind === 'details' ? (
         <JobDetails
           job={current.data}
-          status={current.status}
+          status={
+            current.status
+          }
           onRetry={retry}
           onSaveToTracker={
             appState?.addApplication
               ? saveCurrentJobToTracker
               : undefined
           }
-          matchResource={matchResource}
+          matchResource={
+            matchResource
+          }
           onMatchRetry={() => {
             if (!appState) {
               return
             }
 
             appState
-              .matchFor(route.id)
-              .then(setMatchResource)
+              .matchFor(
+                route.id
+              )
+              .then(
+                setMatchResource
+              )
           }}
           onCompleteProfile={() => {
-            window.location.hash = '#/profile/edit'
+            window.location.hash =
+              '#/profile/edit'
           }}
         />
+
       ) : (
         <section className="browse-state">
-          <h1>Page not found</h1>
+          <h1>
+            Page not found
+          </h1>
 
-          <a href="#/jobs">
-            Back to jobs
+          <a href="#/welcome">
+            Back to welcome
           </a>
         </section>
       )}
