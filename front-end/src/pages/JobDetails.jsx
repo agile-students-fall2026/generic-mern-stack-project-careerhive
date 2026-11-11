@@ -6,7 +6,7 @@ import './JobDetails.css'
 import { PostItem } from './Discussion.jsx'
 
 export default function JobDetails({
-  job, status = 'ready', onRetry, onSaveToTracker, onOpenAnalysis, onOpenDiscussion,
+  job, application, status = 'ready', onRetry, onSaveToTracker, onOpenAnalysis, onOpenDiscussion,
   matchResource, onMatchRetry, onCompleteProfile, recentPosts = [],
 }) {
   // Issue #66: Save to Tracker form state
@@ -66,7 +66,8 @@ export default function JobDetails({
   }
 
   const applicationHref = getApplicationHref(job.applicationUrl)
-  const actionsUnavailable = !onSaveToTracker || (!matchResource && !onOpenAnalysis) || !onOpenDiscussion
+  const trackerHref = application ? `#/tracker?application=${encodeURIComponent(application.id)}` : null
+  const actionsUnavailable = (!application && !onSaveToTracker) || (!matchResource && !onOpenAnalysis) || !onOpenDiscussion
 
   return (
     <section className="job-details" aria-labelledby="job-title">
@@ -89,7 +90,9 @@ export default function JobDetails({
       </dl>
 
       <div className="job-actions">
-        <button
+        {application ? (
+          <a href={trackerHref}>In Tracker: {application.stage}</a>
+        ) : <button
           type="button"
           onClick={() => {
             setShowSaveForm(true)
@@ -99,7 +102,7 @@ export default function JobDetails({
           aria-describedby={actionsUnavailable ? 'job-action-availability' : undefined}
         >
           Save to Tracker
-        </button>
+        </button>}
 
         {applicationHref ? (
           <a href={applicationHref} target="_blank" rel="noopener noreferrer">
@@ -109,7 +112,7 @@ export default function JobDetails({
       </div>
 
       {/* Issue #66: Choose stage and note before saving */}
-      {showSaveForm && (
+      {showSaveForm && !application && (
         <section className="job-content" aria-labelledby="save-tracker-title">
           <h2 id="save-tracker-title">Save to Tracker</h2>
 
@@ -154,7 +157,7 @@ export default function JobDetails({
           <p>{saveResult.message}</p>
 
           {saveResult.ok && (
-            <a href="#/tracker">View Tracker</a>
+            <a href={trackerHref ?? '#/tracker'}>View Tracker</a>
           )}
         </div>
       )}

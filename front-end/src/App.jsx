@@ -146,7 +146,9 @@ function App() {
       ) : path === '/profile/edit' ? (
         <EditProfile />
       ) : path === '/tracker' || path.startsWith('/tracker?') ? (
-        <Tracker initialStage={new URLSearchParams(path.split('?')[1] || '').get('stage')} />
+        <Tracker key={path}
+          initialStage={new URLSearchParams(path.split('?')[1] || '').get('stage')}
+          initialApplicationId={new URLSearchParams(path.split('?')[1] || '').get('application')} />
       ) : path === '/deadlines' ? (
         <Deadlines />
       ) : discussionMatch ? (
@@ -157,6 +159,7 @@ function App() {
           query={browseQuery} onQueryChange={setBrowseQuery} sort={browseSort} onSortChange={setBrowseSort} />
       ) : route.kind === 'details' ? (
         <JobDetails key={route.id} job={current.data} status={current.status} onRetry={retry}
+          application={appState.applications.find((application) => application.jobId === route.id)}
           onSaveToTracker={
             appState.status === 'ready' && current.status === 'ready'
               ? saveCurrentJobToTracker

@@ -166,7 +166,7 @@ function StageSection({
   )
 }
 
-function Tracker({ initialStage }) {
+function Tracker({ initialStage, initialApplicationId }) {
   const appState = useAppState()
 
   const [selectedStage, setSelectedStage] =
@@ -178,7 +178,7 @@ function Tracker({ initialStage }) {
   const [
     selectedApplicationId,
     setSelectedApplicationId,
-  ] = useState(null)
+  ] = useState(initialApplicationId || null)
 
   const [jobs, setJobs] = useState([])
   const [jobsStatus, setJobsStatus] =
