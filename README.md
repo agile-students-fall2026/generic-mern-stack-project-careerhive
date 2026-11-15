@@ -89,7 +89,18 @@ Other commands, run inside `front-end/`:
 
 See the [frontend README](./front-end/README.md) for the demo routes, mock API, and remaining integration/browser checks.
 
-## Repository Structure
+## Running the back end
+
+```bash
+cd back-end
+npm install
+npm run dev        # API at http://localhost:3000 (restarts on save)
+npm test           # mocha + chai unit tests
+npm run coverage   # c8 coverage report
+```
+
+Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwards `/api` requests to the back end. To serve the built app from Express instead, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000.
+
 
 ```
 CareerHive/
