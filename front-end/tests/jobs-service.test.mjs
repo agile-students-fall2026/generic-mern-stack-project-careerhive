@@ -1,16 +1,24 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { once } from 'node:events'
 import { createServer } from 'vite'
+import app from '../../back-end/app.js'
 
 let server
+let backend
 let origin
+const backendRequests = []
 const originalFetch = globalThis.fetch
 
 before(async () => {
+  backend = app.listen(0, '127.0.0.1')
+  backend.on('request', request => backendRequests.push(request.originalUrl))
+  await once(backend, 'listening')
   server = await createServer({
     root: fileURLToPath(new URL('../', import.meta.url)),
-    server: { host: '127.0.0.1', port: 0, hmr: false, watch: null },
+    server: { host: '127.0.0.1', port: 0, hmr: false, watch: null,
+      proxy: { '/api': `http://127.0.0.1:${backend.address().port}` } },
     logLevel: 'silent',
   })
   await server.listen()
@@ -20,9 +28,10 @@ before(async () => {
 after(async () => {
   globalThis.fetch = originalFetch
   await server?.close()
+  if (backend) await new Promise(resolve => backend.close(resolve))
 })
 
-test('the mock API and data access agree on all listings and selected job identity', async () => {
+test('Vite proxies listing and selected-job requests to Express', async () => {
   await assert.doesNotReject(async () => {
     const { getJobs, getJob } = await server.ssrLoadModule('/src/jobs/api.js')
     const jobs = await getJobs()
@@ -37,10 +46,12 @@ test('the mock API and data access agree on all listings and selected job identi
       assert.match(detail.logoUrl, /^https:\/\/picsum\.photos\//)
     }
     assert.equal(await getJob('does-not-exist'), null)
+    assert.deepEqual(backendRequests, ['/api/jobs', `/api/jobs/${jobs[0].id}`,
+      `/api/jobs/${jobs.at(-1).id}`, '/api/jobs/does-not-exist'])
   })
 })
 
-test('the mock endpoint returns JSON errors and never accepts writes', async () => {
+test('the Express endpoint returns JSON errors and never accepts writes', async () => {
   const missing = await fetch('/api/jobs/does-not-exist')
   assert.equal(missing.status, 404)
   assert.match(missing.headers.get('content-type'), /application\/json/)

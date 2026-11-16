@@ -66,9 +66,7 @@ for (const body of [null, [], { profile: null }]) {
 
 
 test('every listed job supplies profile-aware mock analysis and responds to saved skill changes', async () => {
-  const listingResponse = await fetch(`${baseURL}/api/jobs`)
-  assert.equal(listingResponse.status, 200)
-  const jobs = await listingResponse.json()
+  const jobs = JSON.parse(readFileSync(new URL('../../back-end/data/jobs.json', import.meta.url)))
   assert.ok(jobs.length > 1)
   for (const job of jobs) {
     const initial = await request(profile, job.id)
