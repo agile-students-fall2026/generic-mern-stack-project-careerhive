@@ -101,6 +101,7 @@ npm run coverage   # c8 coverage report
 
 Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwards `/api` requests to the back end. To serve the built app from Express instead, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000.
 
+## Repository Structure
 
 ```
 CareerHive/
