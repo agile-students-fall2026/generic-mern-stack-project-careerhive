@@ -7,7 +7,6 @@ import './Home.css'
 import { getJobHref } from '../jobs/routes.js'
 
 const stages = ['Saved', 'Preparing', 'Applied', 'Interview', 'Rejected', 'Offer']
-const DAY = 86400000
 
 function utcDay(value) {
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '')
@@ -22,11 +21,14 @@ function todayUtc() {
 
 function Home() {
     const appState = useAppState()
+    const { profile, status, matchFor } = appState ?? {}
     const [jobs, setJobs] = useState([])
     const [jobsStatus, setJobsStatus] = useState('loading')
     const [selectedId, setSelectedId] = useState('')
-    const [recommendations, setRecommendations] = useState([])
-    const [matchStatus, setMatchStatus] = useState('loading')
+    const [matches, setMatches] = useState(null)
+    const current = matches?.jobs === jobs && matches.profile === profile && matches.matchFor === matchFor
+    const matchStatus = current ? matches.status : 'loading'
+    const recommendations = current ? matches.recommendations : []
 
     useEffect(() => {
         let active = true
@@ -42,27 +44,24 @@ function Home() {
     }, [])
 
     useEffect(() => {
-        if (jobsStatus !== 'ready' || appState?.status !== 'ready') return
+        if (jobsStatus !== 'ready' || status !== 'ready') return
         const controller = new AbortController()
         let active = true
-        setMatchStatus('loading')
-        Promise.all(jobs.map((job) => appState.matchFor(job.id, { signal: controller.signal }).then(
+        Promise.all(jobs.map((job) => matchFor(job.id, { signal: controller.signal }).then(
             (resource) => ({ job, resource }),
             () => ({ job, resource: { status: 'error' } }),
         ))).then((results) => {
             if (!active) return
             if (results.some((item) => item.resource.status === 'incomplete-profile')) {
-                setRecommendations([])
-                setMatchStatus('incomplete')
+                setMatches({ jobs, profile, matchFor, status: 'incomplete', recommendations: [] })
                 return
             }
             const ready = results.filter((item) => item.resource.status === 'ready' && item.resource.data.jobId === item.job.id)
             ready.sort((a, b) => (b.resource.data.score ?? -1) - (a.resource.data.score ?? -1))
-            setRecommendations(ready.slice(0, 2))
-            setMatchStatus('ready')
+            setMatches({ jobs, profile, matchFor, status: 'ready', recommendations: ready.slice(0, 2) })
         })
         return () => { active = false; controller.abort() }
-    }, [jobs, jobsStatus, appState?.status, appState?.profile, appState?.matchFor])
+    }, [jobs, jobsStatus, status, profile, matchFor])
 
     if (!appState || appState.status === 'error' || jobsStatus === 'error') {
         return <p role="alert">Could not load home.</p>
