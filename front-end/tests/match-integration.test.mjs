@@ -95,6 +95,34 @@ async function type(element, value, key) {
 const detailRoute = index => `/jobs/${encodeURIComponent(jobs[index].id)}`
 const contains = text => document.body.textContent.includes(text)
 
+test('Home refreshes recommendations for the saved profile and ignores superseded results', async () => {
+  const recommendations = () => document.querySelectorAll('.home-recommendation')
+  await mount('/home')
+  await waitFor(() => recommendations().length === 2)
+  const initialRequests = requests.length
+  await act(async () => currentState.updateApplication(applications[0].id, { note: 'Follow up next week.' }))
+  assert.equal(requests.length, initialRequests, 'Application edits must not refetch profile matches')
+
+  const previous = deferred(), latest = deferred()
+  matchHandler = request => (request.profile.revision === 2 ? previous : latest).promise.then(() =>
+    response(match(request.jobId, request.profile, { summary: `Home profile revision ${request.profile.revision}` })))
+  await act(async () => currentState.saveProfile({ ...currentState.profile, skills: ['Git'] }))
+  await waitFor(() => requests.some(request => request.profile.revision === 2))
+  assert.ok(contains('Loading recommendations'))
+  assert.equal(recommendations().length, 0)
+  await act(async () => currentState.saveProfile({ ...currentState.profile, skills: ['React'] }))
+  await waitFor(() => requests.some(request => request.profile.revision === 3))
+  assert.ok(requests.filter(request => request.profile.revision === 2).every(request => request.options.signal.aborted))
+  await act(async () => latest.resolve())
+  await waitFor(() => recommendations().length === 2)
+  assert.ok(contains('Home profile revision 3'))
+  await act(async () => previous.resolve())
+  assert.ok(!contains('Home profile revision 2'))
+  await act(async () => currentState.saveProfile({ ...currentState.profile, skills: [] }))
+  await waitFor(() => contains('We need your profile information'))
+  assert.equal(recommendations().length, 0)
+})
+
 test('match starts loading and a network failure is retryable without leaving a loading state', async () => {
   const pending = deferred()
   matchHandler = () => pending.promise

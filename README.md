@@ -66,7 +66,7 @@ Read the [contribution guide](./CONTRIBUTING.md) for team norms, the Git workflo
 
 ## Project Status and Documentation
 
-CareerHive is in Sprint 1. The React front end is set up in `front-end/`; the back end in `back-end/` is still a placeholder until Sprint 2.
+CareerHive is in Sprint 2. The React front end is in `front-end/`; the Express back end in `back-end/` now serves health checks and job listings. Other API routes are being migrated.
 
 See [UX-DESIGN.md](./UX-DESIGN.md) for the app map, wireframes, and outstanding design and prototype checks. The clickable prototype is on [Figma](https://www.figma.com/proto/R4lliiZKlfzQkVtCScmLcN/CareerHive-Prototype?node-id=75-3&starting-point-node-id=75-3).
 
@@ -99,14 +99,16 @@ npm test           # mocha + chai unit tests
 npm run coverage   # c8 coverage report
 ```
 
-Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwards `/api` requests to the back end. To serve the built app from Express instead, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000.
+Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwards job requests to Express; the remaining auth/profile/tracker/discussion/match requests still use the Vite app mock during migration. `npm run preview` also needs Express for jobs. Frontend API tests require dependencies installed in both folders and start their own servers on ephemeral ports.
+
+To serve built files from Express, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000. Static files and job APIs work there; the complete UI still needs the remaining backend routes, including profile, applications and discussions required at startup. Full integration and final mock removal are tracked in #130 and #128.
 
 ## Repository Structure
 
 ```
 CareerHive/
 ├── front-end/       # React front end (Vite)
-├── back-end/        # Planned Express back end; placeholder
+├── back-end/        # Express API, mock JSON data and Mocha/Chai tests
 ├── ux-design/       # App map, wireframes, and UX design files
 ├── README.md
 ├── CONTRIBUTING.md

@@ -11,6 +11,8 @@ npm install
 npm run dev
 ```
 
+Install dependencies in `../back-end/` and run `npm run dev` there alongside Vite. Frontend API tests also require those backend dependencies; they start Express on an ephemeral port, so no separate running server is needed for `npm test`.
+
 Open the URL Vite prints (normally http://localhost:5173). The app opens Welcome; the signed-in Menu links to Browse Jobs, My Tracker and My Profile; `#/jobs` lists opportunities and `#/jobs/<id>` opens the selected listing. Links support browser back/forward. Unknown routes and missing listings have a way back to Browse.
 
 Returning from details restores the loaded Browse list without refetching it, including after retrying a detail request. The list is retained for this mounted app session; reload the page to fetch changed demo fixtures. An active request failure, including an abort, shows a retryable error; requests canceled by navigation cannot replace the current view.
@@ -22,13 +24,15 @@ npm run build
 npm run preview
 ```
 
-Tests use Node's built-in runner, React/Vite, and the development-only jsdom dependency. They cover rendered content, mounted-component navigation/retry/request races, and the real local mock API. The API tests open an ephemeral localhost port. These checks do not verify visual layout, actual browser tabs, external images, or physical scrolling.
+Tests use Node's built-in runner, React/Vite, and the development-only jsdom dependency. They cover rendered content, mounted-component navigation/retry/request races, and job requests through the Vite proxy to Express. The API tests open ephemeral localhost ports. These checks do not verify visual layout, actual browser tabs, external images, or physical scrolling.
 
 ## Mock data and integration
 
-The local Vite plugin in `mocks/jobs-api.mjs` serves `mocks/jobs.json` through read-only `GET /api/jobs` and `GET /api/jobs/:id` endpoints in both dev and preview. The six internship records are fictional, use seeded Picsum images, and link to reserved example.com pages. The app identifies them as demo listings. No API keys, Express server, or live AI are required.
+Express serves `back-end/data/jobs.json` through read-only `GET /api/jobs` and `GET /api/jobs/:id`. Responses retain the listing array, selected-job record and JSON errors used by `src/jobs/api.js`. The nine fictional internship/entry-level records use seeded Picsum images and reserved example.com links. No API keys or live AI are required.
 
-The normal build contains the client app, not the mock server. Static hosting of `dist/` needs a service implementing the same endpoints (or an equivalent mock host); `vite preview` supplies the local fixture API for checking the build.
+Vite dev and preview proxy job requests to Express at `http://localhost:3000`; the jobs mock is no longer registered. Keep Express running for both. The separate `appMockApi` remains for unmigrated auth/profile/tracker/discussion/match requests. Existing fixture files remain until their consumers migrate; #128 owns final mock removal.
+
+The build contains the client app. Express serves `dist/` and job APIs, but the complete built UI still needs the other backend routes, including shared startup data (#130). Static hosting needs a compatible API.
 
 `src/jobs/api.js` owns requests, validation, and record identity checks. `src/jobs/routes.js` owns the two native hash routes. These are scoped implementations for #60/#65, ready to adapt to the agreed shared data (#44/#46) and main routing/layout (#49); those broader teammate tasks are not completed by this change. No profile, tracker, discussion, or global state contract is asserted here.
 

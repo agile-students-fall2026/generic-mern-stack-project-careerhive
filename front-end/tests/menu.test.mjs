@@ -109,10 +109,11 @@ test('navigation keeps the existing routes and dispatches one close per link', a
   await mount({ onClose: () => { dismissals++ } })
   const links = [...document.querySelectorAll('.menu-link:not(.menu-logout)')]
   assert.deepEqual(links.map((link) => [link.textContent, link.getAttribute('href')]), [
-    ['Browse Jobs', '#/jobs'], ['My Tracker', '#/tracker'], ['My Profile', '#/profile'],
+    ['Home', '#/home'], ['Browse Jobs', '#/jobs'], ['My Tracker', '#/tracker'],
+    ['Deadlines', '#/deadlines'], ['My Profile', '#/profile'],
   ])
   for (const link of links) await click(link)
-  assert.equal(dismissals, 3)
+  assert.equal(dismissals, 5)
 })
 
 test('Log Out dispatches the parent logout once without also dispatching ordinary close', async () => {
