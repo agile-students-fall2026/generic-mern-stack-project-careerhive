@@ -143,7 +143,7 @@ Collects the info CareerHive uses to recommend jobs and calculate AI match score
 
 - Typing a skill or location and pressing enter adds it as a tag below the field. Tapping a tag removes it.
 - The work authorization answer is used to point out jobs that offer visa sponsorship, which matters a lot for international students.
-- "Skip for now" takes the user to Home. They can fill out their profile later from **Edit Profile**, but recommendations won't be as good until they do.
+- "Skip for now" takes the user to Home. Personalized recommendations and match analysis require a saved major, graduation date, work authorization and at least one skill; **Complete profile** opens Edit Profile when information is missing. This clarifies the existing frontend behavior retained by the Sprint 2 match migration (#125).
 
 <img src="./ux-design/wireframes-06-profile-setup.drawio.png" alt="Profile Setup wireframe" width="300">
 
