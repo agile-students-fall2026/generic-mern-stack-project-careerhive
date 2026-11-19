@@ -2,21 +2,31 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { once } from 'node:events'
 import { createServer } from 'vite'
+import app from '../../back-end/app.js'
 
 const profile = JSON.parse(readFileSync(new URL('../mocks/profile.json', import.meta.url)))
-let server, baseURL
+let server, backend, baseURL
+const backendRequests = []
 before(async () => {
-  server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), server: { host: '127.0.0.1', port: 0 }, logLevel: 'silent' })
+  backend = app.listen(0, '127.0.0.1')
+  backend.on('request', request => backendRequests.push(request.method + ' ' + request.originalUrl))
+  await once(backend, 'listening')
+  server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)),
+    server: { host: '127.0.0.1', port: 0, proxy: { '/api': `http://127.0.0.1:${backend.address().port}` } }, logLevel: 'silent' })
   await server.listen()
   baseURL = `http://127.0.0.1:${server.httpServer.address().port}`
 })
-after(async () => { await server.close() })
+after(async () => {
+  await server?.close()
+  if (backend) await new Promise(resolve => backend.close(resolve))
+})
 async function request(saved, job = 'brightspace-software-intern') {
   return fetch(`${baseURL}/api/matches/${job}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: saved }) })
 }
 
-test('mock matches use the current saved skills and echo the selected job and profile revision', async () => {
+test('Vite proxies profile-aware POST and legacy GET matches to Express', async () => {
   const initial = await request(profile)
   assert.equal(initial.status, 200)
   const data = await initial.json()
@@ -37,6 +47,11 @@ test('mock matches use the current saved skills and echo the selected job and pr
   assert.equal(fewer.score, 46)
   assert.deepEqual(fewer.missingSkills, ['React', 'Git'])
   assert.ok(!fewer.fitExplanation.some(text => text.includes('React')))
+  const legacy = await fetch(`${baseURL}/api/matches/brightspace-software-intern`)
+  assert.equal(legacy.status, 200)
+  assert.equal((await legacy.json()).score, 92)
+  assert.deepEqual(backendRequests, [...Array(3).fill('POST /api/matches/brightspace-software-intern'),
+    'GET /api/matches/brightspace-software-intern'])
 })
 
 for (const [name, changes] of [['missing skills', { skills: null }], ['malformed skills', { skills: [12] }],

@@ -9,9 +9,6 @@ const applications = JSON.parse(
 const discussions = JSON.parse(
   readFileSync(new URL("./discussions.json", import.meta.url), "utf8"),
 );
-const matches = JSON.parse(
-  readFileSync(new URL("./matches.json", import.meta.url), "utf8"),
-);
 const accounts = JSON.parse(
   readFileSync(new URL("./accounts.json", import.meta.url), "utf8"),
 );
@@ -29,42 +26,9 @@ function appMiddleware(request, response, next) {
     "/api/profile",
     "/api/applications",
     "/api/discussions",
-    "/api/matches",
   ];
   if (!known.some((item) => path === item || path.startsWith(item + "/")))
     return next();
-  if (request.method === "POST" && path.startsWith("/api/matches/")) {
-    return readJson(request).then((body) => {
-      const saved = body?.profile;
-      if (!saved || saved.id !== profile.id || !Number.isInteger(saved.revision) || saved.revision < 1
-        || ![saved.major, saved.graduationDate, saved.workAuthorization].every((value) => typeof value === "string" && value.trim())
-        || !Array.isArray(saved.skills) || !saved.skills.length
-        || !saved.skills.every((skill) => typeof skill === "string" && skill.trim())) {
-        return send(response, 400, { error: "A complete saved demo profile is required" });
-      }
-      let jobId;
-      try { jobId = decodeURIComponent(path.slice("/api/matches/".length)); }
-      catch { return send(response, 400, { error: "Invalid job identifier" }); }
-      const match = matches.find((item) => item.jobId === jobId);
-      if (!match) return send(response, 404, { error: "Match not found" });
-      const skills = new Set(saved.skills.map((skill) => skill.trim().toLowerCase()));
-      // Fixture weights make profile edits observable; they are not a live AI score.
-      const criteria = Object.entries(match.skillWeights);
-      const present = criteria.filter(([skill]) => skills.has(skill.toLowerCase()));
-      return send(response, 200, {
-        jobId,
-        profileId: saved.id,
-        profileRevision: saved.revision,
-        score: present.reduce((total, [, weight]) => total + weight, 0),
-        summary: present.length
-          ? "Mock match based on your saved skills: " + present.map(([skill]) => skill).join(", ") + "."
-          : "None of this role's listed skills are in your saved profile yet.",
-        fitExplanation: present.map(([skill]) => "Your saved profile includes " + skill + "."),
-        missingSkills: criteria.filter(([skill]) => !skills.has(skill.toLowerCase())).map(([skill]) => skill),
-        keyQualifications: match.keyQualifications,
-      });
-    });
-  }
   if (request.method !== "GET")
     return send(response, 405, { error: "Method not allowed" });
 
@@ -86,15 +50,6 @@ function appMiddleware(request, response, next) {
       response,
       200,
       discussions.filter((item) => item.jobId === jobId),
-    );
-  }
-  if (path.startsWith("/api/matches/")) {
-    const jobId = decodeURIComponent(path.slice("/api/matches/".length));
-    const match = matches.find((item) => item.jobId === jobId);
-    return send(
-      response,
-      match ? 200 : 404,
-      match ?? { error: "Match not found" },
     );
   }
   return send(response, 404, { error: "Not found" });
