@@ -8,6 +8,39 @@ const app = express()
 const jobs = JSON.parse(readFileSync(new URL('./data/jobs.json', import.meta.url), 'utf8'))
 const matches = JSON.parse(readFileSync(new URL('./data/matches.json', import.meta.url), 'utf8'))
 const demoProfile = JSON.parse(readFileSync(new URL('./data/profile.json', import.meta.url), 'utf8'))
+const roles = JSON.parse(readFileSync(new URL('./data/roles.json', import.meta.url), 'utf8'))
+let savedProfile = structuredClone(demoProfile)
+
+function textList(value) {
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || item.trim() === '')) return null
+  return value.map(item => item.trim())
+}
+
+function validProfile(body) {
+  if (!body || typeof body !== 'object') return null
+  const fields = ['name', 'email', 'photo', 'degree', 'major', 'school', 'graduationDate', 'workAuthorization']
+  if (!fields.every(key => typeof body[key] === 'string')) return null
+  const skills = textList(body.skills)
+  const locations = textList(body.locations)
+  const lookingFor = textList(body.lookingFor)
+  if (!skills || !locations || !lookingFor) return null
+  if (lookingFor.some(role => !roles.includes(role))) return null
+  return {
+    id: savedProfile.id,
+    revision: savedProfile.revision + 1,
+    name: body.name.trim(),
+    email: body.email.trim(),
+    photo: body.photo.trim(),
+    degree: body.degree.trim(),
+    major: body.major.trim(),
+    school: body.school.trim(),
+    graduationDate: body.graduationDate.trim(),
+    skills,
+    lookingFor,
+    locations,
+    workAuthorization: body.workAuthorization.trim(),
+  }
+}
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true })
@@ -76,6 +109,30 @@ app.use('/api/matches', (req, res) => {
   if (error.type !== 'entity.parse.failed' && error.type !== 'entity.too.large') return next(error)
   res.status(error.status).json({ error: error.type === 'entity.too.large'
     ? 'Match request is too large' : 'A complete saved demo profile is required' })
+})
+
+app.use('/api/profile', (req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.set('Allow', 'GET, POST').status(405).json({ error: 'Method not allowed' })
+  }
+  next()
+})
+
+app.get('/api/profile', (req, res) => {
+  res.json(savedProfile)
+})
+
+app.post('/api/profile', (req, res) => {
+  const nextProfile = validProfile(req.body)
+  if (!nextProfile) return res.status(400).json({ error: 'Profile is not valid' })
+  savedProfile = nextProfile
+  res.json(savedProfile)
+})
+
+app.get('/api/roles', (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  res.json(roles)
 })
 
 // Static: serve the built front end
