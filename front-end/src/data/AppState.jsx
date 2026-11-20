@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AppStateContext } from './useAppState.js'
-import { getApplications, getDiscussions, getMatch, getProfile } from './api.js'
-
+import { getApplications, getDiscussions, getMatch, getProfile, saveProfile as postProfile } from './api.js'
 function AppState(props) {
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
@@ -33,8 +32,9 @@ function AppState(props) {
     return () => { active = false }
   }, [])
 
-  function saveProfile(nextProfile) {
-    setProfile((previous) => ({ ...nextProfile, id: previous.id, revision: previous.revision + 1 }))
+  async function saveProfile(nextProfile) {
+    const saved = await postProfile(nextProfile)
+    setProfile(saved)
   }
 
   function updateApplication(applicationId, change) {

@@ -16,6 +16,7 @@ function EditProfileForm({ profile, onSave }) {
     const [photoChoice, setPhotoChoice] = useState('')
     const [skillInput, setSkillInput] = useState('')
     const [locationInput, setLocationInput] = useState('')
+    const [saveError, setSaveError] = useState('')
 
     function changeField(event) {
         setDraft({ ...draft, [event.target.name]: event.target.value })
@@ -87,9 +88,14 @@ function EditProfileForm({ profile, onSave }) {
         closePhoto()
     }
 
-    function saveEdit() {
-        onSave(draft)
-        window.location.hash = '#/profile'
+    async function saveEdit() {
+        setSaveError('')
+        try {
+            await onSave(draft)
+            window.location.hash = '#/profile'
+        } catch (problem) {
+            setSaveError(problem.message)
+        }
     }
 
     function cancelEdit() {
@@ -155,6 +161,7 @@ function EditProfileForm({ profile, onSave }) {
     </fieldset>
 
     <button type="button" className="ui-button ui-button-secondary" onClick={cancelEdit}>Cancel</button>
+    {saveError ? <p role="alert">{saveError}</p> : null}
     <button type="button" className="ui-button" onClick={saveEdit}>Save Changes</button>
     {photoOpen && (
     <div className="photo-dialog">

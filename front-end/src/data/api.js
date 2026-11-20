@@ -9,6 +9,10 @@ export function getProfile() {
   return request('/api/profile')
 }
 
+export function saveProfile(profile) {
+  return post('/api/profile', profile)
+}
+
 export function getApplications() {
   return request('/api/applications')
 }
