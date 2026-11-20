@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAppState } from '../data/useAppState.js'
 
 function ProfileSetup() {
@@ -6,6 +7,18 @@ function ProfileSetup() {
 
     if (appState.status === 'error') return <p role="alert">{appState.message}</p>
     if (appState.status === 'loading' || !profile) return <p>Loading profile…</p>
+
+    const [saveError, setSaveError] = useState('')
+
+    async function saveAndContinue() {
+        setSaveError('')
+        try {
+            await appState.saveProfile(profile)
+            window.location.hash = '#/home'
+        } catch (problem) {
+            setSaveError(problem.message)
+        }
+    }
 
     function skipProfile() {
         window.location.hash = '#/home'
@@ -34,7 +47,8 @@ function ProfileSetup() {
                 Work authorization
                 <input className="ui-field" value={profile.workAuthorization} readOnly />
             </label>
-
+            <button className="ui-button" type="button" onClick={saveAndContinue}>Save and continue</button>
+            {saveError ? <p role="alert">{saveError}</p> : null}
             <button className="ui-button" type="button" onClick={skipProfile}>Skip for now</button>
         </section>
     )
