@@ -9,6 +9,7 @@ const jobs = JSON.parse(readFileSync(new URL('./data/jobs.json', import.meta.url
 const matches = JSON.parse(readFileSync(new URL('./data/matches.json', import.meta.url), 'utf8'))
 const demoProfile = JSON.parse(readFileSync(new URL('./data/profile.json', import.meta.url), 'utf8'))
 const roles = JSON.parse(readFileSync(new URL('./data/roles.json', import.meta.url), 'utf8'))
+const applications = JSON.parse(readFileSync(new URL('./data/applications.json', import.meta.url), 'utf8'))
 let savedProfile = structuredClone(demoProfile)
 
 function textList(value) {
@@ -60,6 +61,22 @@ app.use('/api/jobs', (req, res) => {
   }
   const job = jobs.find(item => item.id === id)
   res.status(job ? 200 : 404).json(job ?? { error: 'Job not found' })
+})
+
+app.use('/api/applications', (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  if (req.method !== 'GET') {
+    return res.set('Allow', 'GET').status(405).json({ error: 'Method not allowed' })
+  }
+  if (req.originalUrl.split('?')[0] === '/api/applications') return res.json(applications)
+  let id
+  try {
+    id = decodeURIComponent(req.path.slice(1))
+  } catch {
+    return res.status(400).json({ error: 'Invalid application identifier' })
+  }
+  const application = applications.find(item => item.id === id)
+  res.status(application ? 200 : 404).json(application ?? { error: 'Application not found' })
 })
 
 app.use('/api/matches', (req, res, next) => {

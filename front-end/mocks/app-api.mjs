@@ -4,9 +4,6 @@ const profile = JSON.parse(
   readFileSync(new URL("./profile.json", import.meta.url), "utf8"),
 );
 
-const applications = JSON.parse(
-  readFileSync(new URL("./applications.json", import.meta.url), "utf8"),
-);
 const discussions = JSON.parse(
   readFileSync(new URL("./discussions.json", import.meta.url), "utf8"),
 );
@@ -24,7 +21,6 @@ function send(response, status, body) {
 function appMiddleware(request, response, next) {
   const path = new URL(request.url, "http://localhost").pathname;
   const known = [
-    "/api/applications",
     "/api/discussions",
   ];
   if (!known.some((item) => path === item || path.startsWith(item + "/")))
@@ -32,16 +28,6 @@ function appMiddleware(request, response, next) {
   if (request.method !== "GET")
     return send(response, 405, { error: "Method not allowed" });
 
-  if (path === "/api/applications") return send(response, 200, applications);
-  if (path.startsWith("/api/applications/")) {
-    const id = decodeURIComponent(path.slice("/api/applications/".length));
-    const application = applications.find((item) => item.id === id);
-    return send(
-      response,
-      application ? 200 : 404,
-      application ?? { error: "Application not found" },
-    );
-  }
   if (path === "/api/discussions") return send(response, 200, discussions);
   if (path.startsWith("/api/discussions/")) {
     const jobId = decodeURIComponent(path.slice("/api/discussions/".length));
