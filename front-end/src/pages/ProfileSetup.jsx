@@ -4,11 +4,10 @@ import { useAppState } from '../data/useAppState.js'
 function ProfileSetup() {
     const appState = useAppState()
     const profile = appState.profile
+    const [saveError, setSaveError] = useState('')
 
     if (appState.status === 'error') return <p role="alert">{appState.message}</p>
     if (appState.status === 'loading' || !profile) return <p>Loading profile…</p>
-
-    const [saveError, setSaveError] = useState('')
 
     async function saveAndContinue() {
         setSaveError('')
