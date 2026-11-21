@@ -1,13 +1,103 @@
-.edit-profile label,
-.edit-profile button {
-  display: block;
-  margin-top: 12px;
+.edit-profile h1 {
+  margin: 16px 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.035em;
 }
 
-.edit-profile input[type="text"] {
+.profile-back {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.edit-photo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.edit-photo img,
+.photo-panel img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border: 1px solid #d4d7db;
+  background: #f6edcc;
+}
+
+.edit-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid #d4d7db;
+  background: #ffffff;
+}
+
+.edit-card h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.edit-profile label {
   display: block;
-  width: 100%;
+  margin-top: 12px;
+  font-size: 0.875rem;
+}
+
+.edit-card label:first-of-type {
+  margin-top: 0;
+}
+
+.edit-profile .ui-field {
   margin-top: 4px;
+}
+
+.edit-hint {
+  margin: 8px 0 0;
+  color: #555b64;
+  font-size: 0.75rem;
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edit-profile .skill-tags button {
+  padding: 3px 7px;
+  border: 1px solid #d4d7db;
+  background: #ffffff;
+  color: #202328;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.edit-roles {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.edit-roles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.edit-error {
+  margin: 12px 0 0;
+  color: #202328;
 }
 
 .photo-dialog {
@@ -17,28 +107,17 @@
   padding: 24px;
 }
 
-.photo-dialog div {
-  background: #ffffff;
+.photo-panel {
+  max-width: 360px;
+  margin: 10vh auto 0;
   padding: 16px;
+  border: 1px solid #d4d7db;
+  background: #ffffff;
 }
 
-.skill-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 8px 0 0;
-    padding: 0;
-    list-style: none;
-}
-
-.edit-profile .skill-tags button {
-    display: inline-block;
-    margin: 0;
-}
-
-.profile-back {
-  display: inline-block;
-  margin-bottom: 12px;
+.photo-panel .ui-button {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
   text-align: center;
-  text-decoration: none;
 }

@@ -103,80 +103,98 @@ function EditProfileForm({ profile, onSave }) {
     }
 
     return (
-    <section className="edit-profile">
-    <a className="ui-button ui-button-secondary profile-back" href="#/profile">Back to profile</a>
-    <h1>Edit Profile</h1>
-    <img src={draft.photo} alt="" width="72" height="72" />
-    <button type="button" onClick={openPhoto}>Change photo</button>
-
-    <label>
-        Full name
-    <input name="name" value={draft.name} onChange={changeField} />
-    </label>
-    <label>
-        Major
-    <input name="major" value={draft.major} onChange={changeField} />
-    </label>
-    <label>
-        Graduation date
-    <input name="graduationDate" value={draft.graduationDate} onChange={changeField} />
-    </label>
-
-    <label>
-        Work authorization
-        <input name="workAuthorization" value={draft.workAuthorization} onChange={changeField} />
-    </label>
-    <label>
-        Skills
-        <input value={skillInput} onChange={changeSkillInput} onKeyDown={addSkill} />
-    </label>
-    <ul className="skill-tags">
-        {draft.skills.map((skill) => (
-            <li key={skill}>
-                <button type="button" onClick={() => removeSkill(skill)}>{skill}</button>
-            </li>
-        ))}
-    </ul>
-
-    <label>
-    Locations
-        <input value={locationInput} onChange={changeLocationInput} onKeyDown={addLocation} />
-    </label>
-    <ul className="skill-tags">
-        {draft.locations.map((location) => (
-            <li key={location}>
-                <button type="button" onClick={() => removeLocation(location)}>{location}</button>
-            </li>
-        ))}
-    </ul>
-
-    <fieldset>
-        <legend>Looking for</legend>
-        {roleChoices.map((role) => (
-            <label key={role}>
-                <input type="checkbox" checked={draft.lookingFor.includes(role)} onChange={() => toggleRole(role)} />
-                {role}
-            </label>
-        ))}
-    </fieldset>
-
-    <button type="button" className="ui-button ui-button-secondary" onClick={cancelEdit}>Cancel</button>
-    {saveError ? <p role="alert">{saveError}</p> : null}
-    <button type="button" className="ui-button" onClick={saveEdit}>Save Changes</button>
-    {photoOpen && (
-    <div className="photo-dialog">
-        <div>
-        <button type="button" onClick={closePhoto}>Close</button>
-        <img src={photoChoice || draft.photo} alt="" width="72" height="72" />
-        <button type="button" onClick={takePhoto}>Take Photo Now</button>
-        <button type="button" onClick={chooseAlbum}>Choose from Album</button>
-        <button type="button" onClick={closePhoto}>Cancel</button>
-        <button type="button" onClick={updatePhoto}>Update</button>
-        </div>
-    </div>
-    )}
-    </section>
-  )
+        <section className="edit-profile">
+            <a className="ui-button ui-button-secondary profile-back" href="#/profile">Back to profile</a>
+            <h1>Edit Profile</h1>
+            <div className="edit-photo">
+                <img src={draft.photo} alt="" width="72" height="72" />
+                <button type="button" className="ui-button ui-button-secondary" onClick={openPhoto}>Change photo</button>
+            </div>
+    
+            <section className="edit-card">
+                <h2>Details</h2>
+                <label>
+                    Full name
+                    <input className="ui-field" name="name" value={draft.name} onChange={changeField} />
+                </label>
+                <label>
+                    Major
+                    <input className="ui-field" name="major" value={draft.major} onChange={changeField} />
+                </label>
+                <label>
+                    Graduation date
+                    <input className="ui-field" name="graduationDate" value={draft.graduationDate} onChange={changeField} />
+                </label>
+                <label>
+                    Work authorization
+                    <input className="ui-field" name="workAuthorization" value={draft.workAuthorization} onChange={changeField} />
+                </label>
+            </section>
+    
+            <section className="edit-card">
+                <h2>Skills</h2>
+                <label>
+                    Add a skill
+                    <input className="ui-field" value={skillInput} onChange={changeSkillInput} onKeyDown={addSkill} />
+                </label>
+                <p className="edit-hint">Press Enter to add one. Click a tag to remove it.</p>
+                <ul className="skill-tags">
+                    {draft.skills.map((skill) => (
+                        <li key={skill}>
+                            <button type="button" onClick={() => removeSkill(skill)}>{skill}</button>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+    
+            <section className="edit-card">
+                <h2>Locations</h2>
+                <label>
+                    Add a location
+                    <input className="ui-field" value={locationInput} onChange={changeLocationInput} onKeyDown={addLocation} />
+                </label>
+                <p className="edit-hint">Press Enter to add one. Click a tag to remove it.</p>
+                <ul className="skill-tags">
+                    {draft.locations.map((location) => (
+                        <li key={location}>
+                            <button type="button" onClick={() => removeLocation(location)}>{location}</button>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+    
+            <section className="edit-card">
+                <h2>Looking for</h2>
+                <fieldset className="edit-roles">
+                    {roleChoices.map((role) => (
+                        <label key={role}>
+                            <input type="checkbox" checked={draft.lookingFor.includes(role)} onChange={() => toggleRole(role)} />
+                            {role}
+                        </label>
+                    ))}
+                </fieldset>
+            </section>
+    
+            {saveError ? <p className="edit-error" role="alert">{saveError}</p> : null}
+            <div className="edit-actions">
+                <button type="button" className="ui-button ui-button-secondary" onClick={cancelEdit}>Cancel</button>
+                <button type="button" className="ui-button" onClick={saveEdit}>Save Changes</button>
+            </div>
+            {photoOpen && (
+                <div className="photo-dialog">
+                    <div className="photo-panel">
+                        <img src={photoChoice || draft.photo} alt="" width="72" height="72" />
+                        <button type="button" className="ui-button ui-button-secondary" onClick={takePhoto}>Take Photo Now</button>
+                        <button type="button" className="ui-button ui-button-secondary" onClick={chooseAlbum}>Choose from Album</button>
+                        <div className="edit-actions">
+                            <button type="button" className="ui-button ui-button-secondary" onClick={closePhoto}>Cancel</button>
+                            <button type="button" className="ui-button" onClick={updatePhoto}>Update</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </section>
+    )
 }
 
 export default EditProfile
