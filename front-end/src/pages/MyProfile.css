@@ -1,0 +1,76 @@
+.profile h1 {
+    margin: 0 0 16px;
+    font-size: 1.5rem;
+    letter-spacing: -0.035em;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.profile-photo {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border: 1px solid #d4d7db;
+    background: #f6edcc;
+}
+
+.profile-name,
+.profile-email {
+    margin: 0;
+}
+
+.profile-name {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.profile-email {
+    color: #555b64;
+    font-size: 0.875rem;
+}
+
+.profile-card {
+    margin-bottom: 12px;
+    padding: 16px;
+    border: 1px solid #d4d7db;
+    background: #ffffff;
+}
+
+.profile-card h2 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+.profile-card p {
+    margin: 0;
+    color: #555b64;
+    font-size: 0.875rem;
+}
+
+.profile-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.profile-tags li {
+    padding: 3px 7px;
+    border: 1px solid #d4d7db;
+    background: #ffffff;
+    font-size: 0.875rem;
+}
+
+.profile-edit {
+    display: inline-block;
+    margin-top: 8px;
+    text-align: center;
+    text-decoration: none;
+}
