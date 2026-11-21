@@ -18,15 +18,124 @@
     text-align: left;
 }
 
-.home-totals a {
-    display: block;
-    margin-bottom: 8px;
+.home-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.home-heading h2 {
+    margin: 0 0 12px;
+}
+
+.home-link {
+    color: #202328;
+    font-size: 0.875rem;
+    text-underline-offset: 3px;
+}
+
+.home-totals {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.home-total {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid #d4d7db;
+    background: #ffffff;
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-total span:first-child {
+    color: #555b64;
+    font-size: 0.875rem;
+}
+
+.home-total span:last-child {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+}
+
+.home-total:hover {
+    border-color: #7b5900;
+}
+
+.home-profile {
+    display: inline-block;
+    margin-top: 8px;
+    text-align: center;
+    text-decoration: none;
 }
 
 .home-recommendations {
     margin: 0 0 16px;
     padding: 0;
     list-style: none;
+}
+
+.home-recommendation {
+    display: block;
+    margin-bottom: 12px;
+    padding: 16px;
+    border: 1px solid #d4d7db;
+    background: #ffffff;
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-recommendation:hover {
+    border-color: #7b5900;
+}
+
+.home-job-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.home-job-heading img {
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.home-job-heading h3,
+.home-job-heading p,
+.home-job-summary {
+    margin: 0;
+}
+
+.home-job-heading h3 {
+    margin-bottom: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.home-job-heading p,
+.home-job-summary {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.home-job-location,
+.home-job-summary {
+    color: #555b64;
+}
+
+.home-job-match {
+    display: inline-block;
+    margin: 14px 0 8px;
+    padding: 3px 7px;
+    background: #f6edcc;
+    color: #634900;
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
 .home-recommendation {
