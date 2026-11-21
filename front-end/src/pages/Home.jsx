@@ -150,11 +150,20 @@ function Home() {
                     {recommendations.map((item) => (
                         <li key={item.job.id}>
                             <a className="home-recommendation" href={getJobHref(item.job.id)}>
-                                {item.job.logoUrl ? <img src={item.job.logoUrl} alt="" width="44" height="44" /> : null}
-                                <span>{item.job.title}</span>
-                                <span>{item.job.company}</span>
-                                <span>{item.resource.data.score == null ? 'Match not available' : item.resource.data.score + '% match'}</span>
-                                <span>{item.resource.data.summary}</span>
+                                <div className="home-job-heading">
+                                    {item.job.logoUrl ? <img src={item.job.logoUrl} alt="" width="44" height="44" /> : null}
+                                    <div>
+                                        <h3>{item.job.title}</h3>
+                                        <p>{item.job.company}</p>
+                                        <p className="home-job-location">
+                                            {item.job.location}{item.job.term ? ` · ${item.job.term}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <p className="home-job-match">
+                                    {item.resource.data.score == null ? 'Match not available' : item.resource.data.score + '% match'}
+                                </p>
+                                <p className="home-job-summary">{item.resource.data.summary}</p>
                             </a>
                         </li>
                     ))}
