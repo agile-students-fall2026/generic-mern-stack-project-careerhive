@@ -106,7 +106,10 @@ function Home() {
     return (
         <section className="home">
             <h1>Home</h1>
+            <div className="home-heading">
             <h2>Upcoming deadlines</h2>
+                <a className="home-link" href="#/deadlines">See all</a>
+            </div>
             {upcoming.length === 0 ? <p>No upcoming deadlines.</p> : (
                 <ul className="home-deadlines">
                     {upcoming.slice(0, 3).map((row) => (
@@ -120,14 +123,14 @@ function Home() {
                     ))}
                 </ul>
             )}
-            <a href="#/deadlines">See all</a>
             <h2>My applications</h2>
             {totals.length === 0 ? <p>No applications yet.</p> : (
                 <ul className="home-totals">
                     {totals.map((item) => (
                         <li key={item.stage}>
-                            <a href={'#/tracker?stage=' + encodeURIComponent(item.stage)}>
-                                {item.stage} {item.count}
+                            <a className="home-total" href={'#/tracker?stage=' + encodeURIComponent(item.stage)}>
+                                <span>{item.stage}</span>
+                                <span>{item.count}</span>
                             </a>
                         </li>
                     ))}
@@ -157,7 +160,7 @@ function Home() {
                     ))}
                 </ul>
             ) : null}
-            <a href="#/profile">My Profile</a>
+            <a className="ui-button ui-button-secondary home-profile" href="#/profile">My Profile</a>
         </section>
     )
 }

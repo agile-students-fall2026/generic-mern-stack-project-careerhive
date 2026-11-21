@@ -18,9 +18,59 @@
     text-align: left;
 }
 
-.home-totals a {
-    display: block;
-    margin-bottom: 8px;
+.home-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.home-heading h2 {
+    margin: 0 0 12px;
+}
+
+.home-link {
+    color: #202328;
+    font-size: 0.875rem;
+    text-underline-offset: 3px;
+}
+
+.home-totals {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.home-total {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid #d4d7db;
+    background: #ffffff;
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-total span:first-child {
+    color: #555b64;
+    font-size: 0.875rem;
+}
+
+.home-total span:last-child {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+}
+
+.home-total:hover {
+    border-color: #7b5900;
+}
+
+.home-profile {
+    display: inline-block;
+    margin-top: 8px;
+    text-align: center;
+    text-decoration: none;
 }
 
 .home-recommendations {
