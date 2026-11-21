@@ -104,7 +104,7 @@ function EditProfileForm({ profile, onSave }) {
 
     return (
     <section className="edit-profile">
-    <a href="#/profile">Back to profile</a>
+    <a className="ui-button ui-button-secondary profile-back" href="#/profile">Back to profile</a>
     <h1>Edit Profile</h1>
     <img src={draft.photo} alt="" width="72" height="72" />
     <button type="button" onClick={openPhoto}>Change photo</button>
