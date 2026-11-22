@@ -281,11 +281,8 @@ function Tracker({ initialStage, initialApplicationId }) {
             { note }
           )
         }
-        onRemove={() => {
-          appState.removeApplication(
-            selectedApplication.id
-          )
-
+        onRemove={async () => {
+          await appState.removeApplication(selectedApplication.id)
           setSelectedApplicationId(null)
         }}
       />

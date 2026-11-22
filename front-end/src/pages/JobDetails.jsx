@@ -14,28 +14,43 @@ export default function JobDetails({
   const [saveStage, setSaveStage] = useState('Saved')
   const [saveNote, setSaveNote] = useState('')
   const [saveResult, setSaveResult] = useState(null)
+  const [savePending, setSavePending] = useState(false)
 
-  function handleSave() {
-    if (!onSaveToTracker) return
+  async function handleSave() {
+    if (!onSaveToTracker || savePending) return
 
-    const result = onSaveToTracker({
-      stage: saveStage,
-      note: saveNote,
-    })
+    setSavePending(true)
 
-    setSaveResult(result ?? {
-      ok: false,
-      message: 'Unable to save this job.',
-    })
+    try {
+      const result = await onSaveToTracker({
+        stage: saveStage,
+        note: saveNote,
+      })
 
-    if (result?.ok) {
-      setShowSaveForm(false)
-      setSaveStage('Saved')
-      setSaveNote('')
+      setSaveResult(result ?? {
+        ok: false,
+        message: 'Unable to save this job.',
+      })
+
+      if (result?.ok) {
+        setShowSaveForm(false)
+        setSaveStage('Saved')
+        setSaveNote('')
+      }
+    } catch (error) {
+      setSaveResult({
+        ok: false,
+        message: error instanceof Error
+          ? error.message
+          : 'Unable to save this job.',
+      })
+    } finally {
+      setSavePending(false)
     }
   }
 
   function handleCancelSave() {
+    if (savePending) return
     setShowSaveForm(false)
     setSaveStage('Saved')
     setSaveNote('')

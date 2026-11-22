@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AppStateContext } from './useAppState.js'
-import { getApplications, getDiscussions, getMatch, getProfile, saveProfile as postProfile } from './api.js'
+
+import {
+  getApplications,
+  createApplication,
+  patchApplication,
+  deleteApplication,
+  getDiscussions,
+  getMatch,
+  getProfile,
+  saveProfile as postProfile,
+} from './api.js'
+
 function AppState(props) {
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
@@ -37,32 +48,29 @@ function AppState(props) {
     setProfile(saved)
   }
 
-  function updateApplication(applicationId, change) {
-    const at = new Date().toISOString()
-    setApplications((previous) => previous.map((application) => {
-      if (application.id !== applicationId) return application
-      const history = change.stage && change.stage !== application.stage
-        ? application.history.concat({ stage: change.stage, at })
-        : application.history
-      return {
-        ...application,
-        stage: change.stage || application.stage,
-        note: change.note ?? application.note,
-        updatedAt: at,
-        history,
-      }
-    }))
-  }
+  async function updateApplication(applicationId, change) {
+  const updated = await patchApplication(applicationId, change)
 
-  function removeApplication(applicationId) {
-    setApplications((previous) =>previous.filter((application) => application.id !== applicationId)
+  setApplications((previous) =>
+    previous.map((application) =>
+      application.id === applicationId ? updated : application
     )
+  )
+
+  return updated
   }
 
-  // Issue #66: Save a job to the Tracker
-  function addApplication(jobId, stage = 'Saved', note = '') {
+  async function removeApplication(applicationId) {
+  await deleteApplication(applicationId)
+
+  setApplications((previous) =>
+    previous.filter((application) => application.id !== applicationId)
+  )
+  }
+
+  async function addApplication(jobId, stage = 'Saved', note = '') {
     if (status !== 'ready' || !jobId) {
-      return false
+      throw new Error('Tracker is currently unavailable.')
     }
 
     const alreadySaved = applications.some(
@@ -73,28 +81,16 @@ function AppState(props) {
       return false
     }
 
-    const at = new Date().toISOString()
-
-    const newApplication = {
-      id: 'application-' + crypto.randomUUID(),
-      jobId,
-      stage,
-      note: note.trim(),
-      updatedAt: at,
-      history: [
-        {
-          stage,
-          at,
-        },
-      ],
-    }
+    const saved = await createApplication(jobId, stage, note.trim())
 
     setApplications((previous) => {
-      if (previous.some((application) => application.jobId === jobId)) {
+      if (previous.some(
+        (application) => application.jobId === saved.jobId
+      )) {
         return previous
       }
 
-      return [newApplication, ...previous]
+      return [saved, ...previous]
     })
 
     return true
@@ -117,7 +113,7 @@ function AppState(props) {
     if (!original) return
     const copy = structuredClone(original)
     setProfile(copy.profile)
-    setApplications(copy.applications)
+    
     setPosts(copy.posts)
     setStatus('ready')
     setMessage('')

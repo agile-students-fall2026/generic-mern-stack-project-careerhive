@@ -2,6 +2,7 @@ import express from 'express'
 import { readFileSync } from 'node:fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { randomUUID } from 'node:crypto'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -10,6 +11,16 @@ const matches = JSON.parse(readFileSync(new URL('./data/matches.json', import.me
 const demoProfile = JSON.parse(readFileSync(new URL('./data/profile.json', import.meta.url), 'utf8'))
 const roles = JSON.parse(readFileSync(new URL('./data/roles.json', import.meta.url), 'utf8'))
 const applications = JSON.parse(readFileSync(new URL('./data/applications.json', import.meta.url), 'utf8'))
+
+const applicationStages = new Set([
+  'Saved',
+  'Preparing',
+  'Applied',
+  'Interview',
+  'Rejected',
+  'Offer',
+])
+
 let savedProfile = structuredClone(demoProfile)
 
 function textList(value) {
@@ -63,10 +74,129 @@ app.use('/api/jobs', (req, res) => {
   res.status(job ? 200 : 404).json(job ?? { error: 'Job not found' })
 })
 
+
+
+
+app.post('/api/applications', express.json(), (req, res) => {
+  res.set('Cache-Control', 'no-store')
+
+  const { jobId, stage = 'Saved', note = '' } = req.body ?? {}
+
+  if (
+    typeof jobId !== 'string' ||
+    !jobs.some(job => job.id === jobId) ||
+    !applicationStages.has(stage) ||
+    typeof note !== 'string'
+  ) {
+    return res.status(400).json({ error: 'Invalid application data' })
+  }
+
+  if (applications.some(application => application.jobId === jobId)) {
+    return res.status(409).json({ error: 'Application already exists' })
+  }
+
+  const at = new Date().toISOString()
+
+  const application = {
+    id: 'application-' + randomUUID(),
+    jobId,
+    stage,
+    note,
+    updatedAt: at,
+    history: [{ stage, at }],
+  }
+
+  applications.push(application)
+
+  return res.status(201).json(application)
+})
+
+
+app.patch('/api/applications/:id', express.json(), (req, res) => {
+  res.set('Cache-Control', 'no-store')
+
+  const application = applications.find(
+    item => item.id === req.params.id
+  )
+
+  if (!application) {
+    return res.status(404).json({ error: 'Application not found' })
+  }
+
+  const change = req.body
+
+  if (
+    !change ||
+    typeof change !== 'object' ||
+    Array.isArray(change)
+  ) {
+    return res.status(400).json({ error: 'Invalid application update' })
+  }
+
+  const hasStage = Object.hasOwn(change, 'stage')
+  const hasNote = Object.hasOwn(change, 'note')
+
+  if (
+    (!hasStage && !hasNote) ||
+    Object.keys(change).some(key => !['stage', 'note'].includes(key)) ||
+    (hasStage && !applicationStages.has(change.stage)) ||
+    (hasNote && typeof change.note !== 'string')
+  ) {
+    return res.status(400).json({ error: 'Invalid application update' })
+  }
+
+  const stageChanged = hasStage && change.stage !== application.stage
+  const noteChanged = hasNote && change.note !== application.note
+
+  if (!stageChanged && !noteChanged) {
+    return res.json(application)
+  }
+
+  const at = new Date().toISOString()
+
+  if (stageChanged) {
+    application.stage = change.stage
+    application.history.push({ stage: change.stage, at })
+  }
+
+  if (hasNote) {
+    application.note = change.note
+  }
+
+  application.updatedAt = at
+
+  return res.json(application)
+})
+
+
+app.delete('/api/applications/:id', (req, res) => {
+  res.set('Cache-Control', 'no-store')
+
+  const index = applications.findIndex(
+    item => item.id === req.params.id
+  )
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Application not found' })
+  }
+
+  applications.splice(index, 1)
+
+  return res.status(204).end()
+})
+
+
+
 app.use('/api/applications', (req, res) => {
   res.set('Cache-Control', 'no-store')
   if (req.method !== 'GET') {
-    return res.set('Allow', 'GET').status(405).json({ error: 'Method not allowed' })
+
+    const isCollection = req.originalUrl.split('?')[0] === '/api/applications'
+    const allowed = isCollection ? 'GET, POST' : 'GET, PATCH, DELETE'
+
+    return res.set('Allow', allowed)
+      .status(405)
+      .json({ error: 'Method not allowed' })
   }
   if (req.originalUrl.split('?')[0] === '/api/applications') return res.json(applications)
   let id
