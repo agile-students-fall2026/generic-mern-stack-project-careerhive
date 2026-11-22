@@ -22,11 +22,11 @@ export function createApplication(jobId, stage = 'Saved', note = '') {
   return post('/api/applications', { jobId, stage, note })
 }
 
-export async function patchApplication(applicationId, change) {
+export async function postApplicationUpdate(applicationId, change) {
   const response = await fetch(
     '/api/applications/' + encodeURIComponent(applicationId),
     {
-      method: 'PATCH',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -38,7 +38,11 @@ export async function patchApplication(applicationId, change) {
   const data = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    throw new Error(data.error || 'Could not update application')
+    throw new Error(data?.error || 'Could not update application')
+  }
+
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid application update response')
   }
 
   return data

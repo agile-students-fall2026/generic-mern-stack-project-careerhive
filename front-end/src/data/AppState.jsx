@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppStateContext } from './useAppState.js'
 
 import {
   getApplications,
   createApplication,
-  patchApplication,
+  postApplicationUpdate,
   deleteApplication,
   getDiscussions,
   getMatch,
@@ -18,6 +18,7 @@ function AppState(props) {
   const [original, setOriginal] = useState(null)
   const [profile, setProfile] = useState(null)
   const [applications, setApplications] = useState([])
+  const applicationWriteQueues = useRef(new Map())
   const [posts, setPosts] = useState([])
 
   useEffect(() => {
@@ -48,25 +49,50 @@ function AppState(props) {
     setProfile(saved)
   }
 
-  async function updateApplication(applicationId, change) {
-  const updated = await patchApplication(applicationId, change)
+  function enqueueApplicationWrite(applicationId, task) {
+    const queues = applicationWriteQueues.current
+    const previous = queues.get(applicationId) ?? Promise.resolve()
 
-  setApplications((previous) =>
-    previous.map((application) =>
-      application.id === applicationId ? updated : application
-    )
-  )
+    // An earlier failure must not block later writes.
+    const next = previous.catch(() => {}).then(task)
+    queues.set(applicationId, next)
 
-  return updated
+    const cleanup = () => {
+      if (queues.get(applicationId) === next) {
+        queues.delete(applicationId)
+      }
+    }
+
+    next.then(cleanup, cleanup)
+    return next
   }
 
-  async function removeApplication(applicationId) {
-  await deleteApplication(applicationId)
+  function updateApplication(applicationId, change) {
+    return enqueueApplicationWrite(applicationId, async () => {
+      const updated = await postApplicationUpdate(applicationId, change)
 
-  setApplications((previous) =>
-    previous.filter((application) => application.id !== applicationId)
-  )
+      setApplications((previous) =>
+        previous.map((application) =>
+          application.id === applicationId ? updated : application
+        )
+      )
+
+      return updated
+    })
   }
+
+
+  function removeApplication(applicationId) {
+    return enqueueApplicationWrite(applicationId, async () => {
+      await deleteApplication(applicationId)
+
+      setApplications((previous) =>
+        previous.filter((application) => application.id !== applicationId)
+      )
+    })
+  }
+
+
 
   async function addApplication(jobId, stage = 'Saved', note = '') {
     if (status !== 'ready' || !jobId) {
@@ -149,5 +175,6 @@ function AppState(props) {
     </AppStateContext.Provider>
   )
 }
+
 
 export default AppState

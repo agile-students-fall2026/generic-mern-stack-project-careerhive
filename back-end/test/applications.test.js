@@ -70,7 +70,7 @@ describe('application write routes', () => {
     expect(duplicate).to.have.status(409)
 
     const updated = await request.execute(app)
-      .patch('/api/applications/' + id)
+      .post('/api/applications/' + id)
       .send({ stage: 'Applied' })
 
     expect(updated).to.have.status(200)
@@ -78,12 +78,19 @@ describe('application write routes', () => {
     expect(updated.body.history).to.have.length(2)
 
     const noteUpdate = await request.execute(app)
-      .patch('/api/applications/' + id)
+      .post('/api/applications/' + id)
       .send({ note: 'Updated note' })
 
     expect(noteUpdate).to.have.status(200)
     expect(noteUpdate.body.note).to.equal('Updated note')
     expect(noteUpdate.body.history).to.have.length(2)
+
+    const legacyUpdate = await request.execute(app)
+      .patch('/api/applications/' + id)
+      .send({ note: 'PATCH compatibility' })
+
+    expect(legacyUpdate).to.have.status(200)
+    expect(legacyUpdate.body.note).to.equal('PATCH compatibility')
 
     const removed = await request.execute(app)
       .delete('/api/applications/' + id)

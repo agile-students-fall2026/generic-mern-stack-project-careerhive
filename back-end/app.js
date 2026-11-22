@@ -112,7 +112,11 @@ app.post('/api/applications', express.json(), (req, res) => {
 })
 
 
-app.patch('/api/applications/:id', express.json(), (req, res) => {
+app.post('/api/applications/:id', express.json(), handleApplicationUpdate)
+app.patch('/api/applications/:id', express.json(), handleApplicationUpdate)
+
+function handleApplicationUpdate(req, res) {
+
   res.set('Cache-Control', 'no-store')
 
   const application = applications.find(
@@ -166,7 +170,7 @@ app.patch('/api/applications/:id', express.json(), (req, res) => {
   application.updatedAt = at
 
   return res.json(application)
-})
+}
 
 
 app.delete('/api/applications/:id', (req, res) => {
@@ -192,7 +196,7 @@ app.use('/api/applications', (req, res) => {
   if (req.method !== 'GET') {
 
     const isCollection = req.originalUrl.split('?')[0] === '/api/applications'
-    const allowed = isCollection ? 'GET, POST' : 'GET, PATCH, DELETE'
+    const allowed = isCollection ? 'GET, POST' : 'GET, POST, PATCH, DELETE'
 
     return res.set('Allow', allowed)
       .status(405)

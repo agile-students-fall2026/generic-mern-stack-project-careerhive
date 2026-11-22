@@ -76,9 +76,12 @@ function Home() {
                 application={selected}
                 job={job}
                 onBack={() => setSelectedId('')}
+                onStageChange={(stage) =>
+                    appState.updateApplication(selected.id, { stage })
+                }
                 onNoteSave={(note) => appState.updateApplication(selected.id, { note })}
-                onRemove={() => {
-                    appState.removeApplication(selected.id)
+                onRemove={async () => {
+                    await appState.removeApplication(selected.id)
                     setSelectedId('')
                 }}
             />
