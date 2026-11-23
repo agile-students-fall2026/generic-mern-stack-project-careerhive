@@ -99,9 +99,9 @@ npm test           # mocha + chai unit tests
 npm run coverage   # c8 coverage report
 ```
 
-Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwards job and match requests to Express; the remaining auth/profile/tracker/discussion requests still use the Vite app mock during migration. `npm run preview` also needs Express for jobs and matches. Frontend API tests require dependencies installed in both folders and start their own servers on ephemeral ports.
+Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwards account, profile, roles, job, match and tracker requests to Express; discussion reads still use the Vite app mock during migration. `npm run preview` also needs Express for jobs and matches. Frontend API tests require dependencies installed in both folders and start their own servers on ephemeral ports.
 
-To serve built files from Express, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000. Static files and job APIs work there; the complete UI still needs the remaining backend routes, including profile, applications and discussions required at startup. Full integration and final mock removal are tracked in #130 and #128.
+To serve built files from Express, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000. Static files and job APIs work there; the complete UI still needs the remaining backend routes, including discussions required at startup. Full integration and final mock removal are tracked in #130 and #128.
 
 ## Repository Structure
 

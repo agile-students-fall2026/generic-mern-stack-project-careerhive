@@ -9,6 +9,9 @@ import {
   getDiscussions,
   getMatch,
   getProfile,
+  logIn as postLogIn,
+  signUp as postSignUp,
+  logOut as postLogOut,
   saveProfile as postProfile,
 } from './api.js'
 
@@ -20,9 +23,12 @@ function AppState(props) {
   const [applications, setApplications] = useState([])
   const applicationWriteQueues = useRef(new Map())
   const [posts, setPosts] = useState([])
+  const profileVersion = useRef(0)
+  const accountQueue = useRef(Promise.resolve())
 
   useEffect(() => {
     let active = true
+    const version = profileVersion.current
     Promise.all([getProfile(), getApplications(), getDiscussions()])
       .then(([profile, applications, posts]) => {
         if (!active) return
@@ -31,7 +37,7 @@ function AppState(props) {
         }
         const firstCopy = { profile, applications, posts }
         setOriginal(structuredClone(firstCopy))
-        setProfile(profile)
+        if (version === profileVersion.current) setProfile(profile)
         setApplications(applications)
         setPosts(posts)
         setStatus('ready')
@@ -45,8 +51,20 @@ function AppState(props) {
   }, [])
 
   async function saveProfile(nextProfile) {
+    const version = profileVersion.current
     const saved = await postProfile(nextProfile)
+    if (version !== profileVersion.current) throw new Error('Your account changed. Please try again.')
     setProfile(saved)
+  }
+
+  function changeAccount(action) {
+    const next = accountQueue.current.catch(() => {}).then(async () => {
+      const saved = await action()
+      profileVersion.current++
+      setProfile(saved)
+    })
+    accountQueue.current = next
+    return next
   }
 
   function enqueueApplicationWrite(applicationId, task) {
@@ -135,14 +153,9 @@ function AppState(props) {
     setPosts((previous) => [nextPost, ...previous])
   }
 
-  function resetAll() {
-    if (!original) return
-    const copy = structuredClone(original)
-    setProfile(copy.profile)
-    
-    setPosts(copy.posts)
-    setStatus('ready')
-    setMessage('')
+  async function resetAll() {
+    await changeAccount(postLogOut)
+    if (original) setPosts(structuredClone(original.posts))
   }
 
   const matchFor = useCallback(async (jobId, options) => {
@@ -161,6 +174,8 @@ function AppState(props) {
     applications,
     posts,
     saveProfile,
+    logIn: (email, password) => changeAccount(() => postLogIn(email, password)),
+    signUp: account => changeAccount(() => postSignUp(account)),
     updateApplication,
     addApplication,
     addPost,

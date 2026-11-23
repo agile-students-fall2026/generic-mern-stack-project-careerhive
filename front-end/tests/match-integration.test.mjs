@@ -8,6 +8,8 @@ import { createServer } from 'vite'
 
 const fixture = name => JSON.parse(readFileSync(new URL(`../mocks/${name}.json`, import.meta.url)))
 const profile = fixture('profile')
+const signedOutProfile = { id: 'profile-guest', revision: 1, name: '', email: '', photo: '', degree: '', major: '',
+  school: '', graduationDate: '', skills: [], lookingFor: [], locations: [], workAuthorization: '' }
 const applications = fixture('applications')
 const posts = fixture('discussions')
 const jobs = fixture('jobs')
@@ -105,6 +107,7 @@ function mockApplication(path, options = {}) {
 
 function serve(url, options = {}) {
   const path = String(url)
+  if (path === '/api/logout') return Promise.resolve(response({ ok: true, profile: signedOutProfile }))
   if (path === '/api/profile') {
     if (options.method === 'POST') {
       const nextProfile = JSON.parse(options.body)
@@ -372,7 +375,7 @@ test('logout restores saved session records and clears Browse controls without a
   await click(button('Menu'))
   await click(Array.from(document.querySelectorAll('a,button')).find(item => item.textContent.trim() === 'Log Out'))
   await waitFor(() => window.location.hash === '#/welcome')
-  assert.deepEqual(currentState.profile, profile)
+  assert.deepEqual(currentState.profile, signedOutProfile)
   assert.deepEqual(currentState.applications, applicationStore)
 
   assert.equal(
