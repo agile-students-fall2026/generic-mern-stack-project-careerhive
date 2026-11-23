@@ -46,51 +46,59 @@ function ApplicationDetails({
 
   const noteChanged = draftNote !== savedNote
 
-  function handleUpdateStage() 
-  
-  {
-    if (!stageChanged) 
-      
-      {
-      return
+  const [actionError, setActionError] = useState('')
+
+  async function runAction(action) {
+    setActionError('')
+
+    try {
+      await action()
+      return true
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to update application.'
+      )
+      return false
     }
-
-    onStageChange(draftStage)
   }
 
-  function handleCancelStage() 
-  
-  {
-    setDraftStage(application.stage)
+  async function handleUpdateStage() {
+    if (!stageChanged) return
+
+    await runAction(() => onStageChange(draftStage))
   }
 
-  function handleSaveNote() 
+  function handleCancelStage() {
+
+  setDraftStage(application.stage)
   
-  {
-    onNoteSave(draftNote)
   }
 
-  function handleClearNote() 
-  
-  {
-    setDraftNote("")
-
-
-    onNoteSave("")
+  async function handleSaveNote() {
+    await runAction(() => onNoteSave(draftNote))
   }
 
-  function handleRemove() 
-  
-  {
+  async function handleClearNote() {
+    const previousNote = draftNote
+    setDraftNote('')
+
+    const saved = await runAction(() => onNoteSave(''))
+
+    if (!saved) {
+      setDraftNote(previousNote)
+    }
+  }
+
+  async function handleRemove() {
     const confirmed = window.confirm(
-      "Are you sure you want to remove this application from your Tracker?"
+      'Are you sure you want to remove this application from your Tracker?'
     )
 
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
-    onRemove()
+    await runAction(() => onRemove())
   }
 
   return (
@@ -100,6 +108,7 @@ function ApplicationDetails({
       </button>
 
       <h1>Application Details</h1>
+      {actionError ? <p role="alert">{actionError}</p> : null}
 
       <h2>{job?.title || "Unknown job"}</h2>
       <p>{job?.company || "Unknown company"}</p>
