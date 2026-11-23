@@ -11,6 +11,7 @@ const jobs = JSON.parse(readFileSync(new URL('./data/jobs.json', import.meta.url
 const matches = JSON.parse(readFileSync(new URL('./data/matches.json', import.meta.url), 'utf8'))
 const roles = JSON.parse(readFileSync(new URL('./data/roles.json', import.meta.url), 'utf8'))
 const applications = JSON.parse(readFileSync(new URL('./data/applications.json', import.meta.url), 'utf8'))
+const discussions = JSON.parse(readFileSync(new URL('./data/discussions.json', import.meta.url), 'utf8'))
 
 const applicationStages = new Set([
   'Saved',
@@ -76,6 +77,32 @@ app.use('/api/jobs', (req, res) => {
 })
 
 
+
+ // Issue #128: Serve discussion fixtures through Express
+app.use('/api/discussions', (req, res) => {
+  res.set('Cache-Control', 'no-store')
+
+  if (req.method !== 'GET') {
+    return res.set('Allow', 'GET')
+      .status(405)
+      .json({ error: 'Method not allowed' })
+  }
+
+  if (req.originalUrl.split('?')[0] === '/api/discussions') {
+    return res.json(discussions)
+  }
+
+  let jobId
+  try {
+    jobId = decodeURIComponent(req.path.slice(1))
+  } catch {
+    return res.status(400).json({ error: 'Invalid job identifier' })
+  }
+
+  return res.json(
+    discussions.filter(item => item.jobId === jobId)
+  )
+})
 
 
 app.post('/api/applications', express.json(), (req, res) => {
