@@ -88,14 +88,28 @@ async function post(path, body, { signal } = {}) {
     body: JSON.stringify(body),
   })
   const data = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(data.error || 'Could not reach CareerHive. Please try again.')
+  if (!response.ok) throw new Error(data?.error || 'Could not reach CareerHive. Please try again.')
   return data
 }
 
 export function logIn(email, password) {
-  return post('/api/login', { email, password })
+  return accountRequest('/api/login', { email, password })
 }
 
 export function signUp(account) {
-  return post('/api/signup', account)
+  return accountRequest('/api/signup', account)
+}
+
+export function logOut() {
+  return accountRequest('/api/logout', {})
+}
+
+async function accountRequest(path, body) {
+  const data = await post(path, body)
+  const profile = data?.profile
+  if (!profile || typeof profile.id !== 'string' || typeof profile.name !== 'string'
+    || typeof profile.email !== 'string' || !Number.isInteger(profile.revision)) {
+    throw new Error('Invalid account profile response')
+  }
+  return profile
 }

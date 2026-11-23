@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { logIn } from '../data/api.js'
+import { useAppState } from '../data/useAppState.js'
 import './Auth.css'
 
 function LogIn() {
+  const { logIn } = useAppState()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

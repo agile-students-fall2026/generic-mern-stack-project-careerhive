@@ -7,7 +7,7 @@ import { createServer } from 'vite'
 import app from '../../back-end/app.js'
 
 const profile = JSON.parse(readFileSync(new URL('../mocks/profile.json', import.meta.url)))
-let server, backend, baseURL
+let server, backend, baseURL, cookie
 const backendRequests = []
 before(async () => {
   backend = app.listen(0, '127.0.0.1')
@@ -17,13 +17,18 @@ before(async () => {
     server: { host: '127.0.0.1', port: 0, proxy: { '/api': `http://127.0.0.1:${backend.address().port}` } }, logLevel: 'silent' })
   await server.listen()
   baseURL = `http://127.0.0.1:${server.httpServer.address().port}`
+  const accounts = JSON.parse(readFileSync(new URL('../../back-end/data/accounts.json', import.meta.url)))
+  const login = await fetch(baseURL + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(accounts[0]) })
+  assert.equal(login.status, 200)
+  cookie = login.headers.get('set-cookie').split(';')[0]
+  backendRequests.length = 0
 })
 after(async () => {
   await server?.close()
   if (backend) await new Promise(resolve => backend.close(resolve))
 })
 async function request(saved, job = 'brightspace-software-intern') {
-  return fetch(`${baseURL}/api/matches/${job}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: saved }) })
+  return fetch(`${baseURL}/api/matches/${job}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: cookie }, body: JSON.stringify({ profile: saved }) })
 }
 
 test('Vite proxies profile-aware POST and legacy GET matches to Express', async () => {

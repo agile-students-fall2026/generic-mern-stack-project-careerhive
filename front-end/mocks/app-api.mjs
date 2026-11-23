@@ -4,9 +4,6 @@ import { readFileSync } from "node:fs";
 const discussions = JSON.parse(
   readFileSync(new URL("./discussions.json", import.meta.url), "utf8"),
 );
-const accounts = JSON.parse(
-  readFileSync(new URL("./accounts.json", import.meta.url), "utf8"),
-);
 
 function send(response, status, body) {
   response.statusCode = status;
@@ -37,58 +34,13 @@ function appMiddleware(request, response, next) {
   return send(response, 404, { error: "Not found" });
 }
 
-function readJson(request) {
-  return new Promise((resolve) => {
-    let body = "";
-    request.on("data", (chunk) => {
-      body += chunk;
-    });
-    request.on("end", () => {
-      try {
-        resolve(JSON.parse(body));
-      } catch {
-        resolve({});
-      }
-    });
-  });
-}
-
-function authMiddleware(request, response, next) {
-  const path = new URL(request.url, "http://localhost").pathname;
-  if (
-    request.method !== "POST" ||
-    (path !== "/api/login" && path !== "/api/signup")
-  )
-    return next();
-
-  readJson(request).then(({ email, password }) => {
-    const account = accounts.find((item) => item.email === email);
-    if (path === "/api/login") {
-      if (account && account.password === password)
-        return send(response, 200, { ok: true });
-      return send(response, 401, {
-        error: "Incorrect email or password. Please try again.",
-      });
-    }
-    if (account) {
-      return send(response, 409, {
-        error:
-          "Email in use or passwords don't match. Sign in or use matching passwords.",
-      });
-    }
-    accounts.push({ email, password });
-    return send(response, 201, { ok: true });
-  });
-}
 export default function appMockApi() {
   return {
     name: 'careerhive-app-mock-api',
     configureServer(server) {
-      server.middlewares.use(authMiddleware)
       server.middlewares.use(appMiddleware)
     },
     configurePreviewServer(server) {
-      server.middlewares.use(authMiddleware)
       server.middlewares.use(appMiddleware)
     },
   }

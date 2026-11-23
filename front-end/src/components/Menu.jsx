@@ -10,7 +10,7 @@ const LINKS = [
   { href: '#/profile', label: 'My Profile' },
 ]
 
-function Menu({ onClose, onLogOut }) {
+function Menu({ onClose, onLogOut, logoutError }) {
   const { profile } = useAppState()
   const dialogRef = useRef(null)
   const closeRef = useRef(null)
@@ -44,7 +44,7 @@ function Menu({ onClose, onLogOut }) {
         <button ref={closeRef} type="button" className="menu-close" onClick={onClose}>Close</button>
         {profile && (
           <div className="menu-user">
-            <img src={profile.photo} alt="" width="56" height="56" />
+            {profile.photo && <img src={profile.photo} alt="" width="56" height="56" />}
             <div>
               <strong>{profile.name}</strong>
               <p>{profile.email}</p>
@@ -55,6 +55,7 @@ function Menu({ onClose, onLogOut }) {
           <a key={link.href} className="menu-link" href={link.href} onClick={onClose}>{link.label}</a>
         ))}
         <a className="menu-link menu-logout" href="#/welcome" onClick={(event) => { event.preventDefault(); onLogOut() }}>Log Out</a>
+        {logoutError ? <p role="alert">{logoutError}</p> : null}
       </nav>
     </dialog>
   )
