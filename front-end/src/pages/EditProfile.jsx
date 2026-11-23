@@ -107,7 +107,7 @@ function EditProfileForm({ profile, onSave }) {
             <a className="ui-button ui-button-secondary profile-back" href="#/profile">Back to profile</a>
             <h1>Edit Profile</h1>
             <div className="edit-photo">
-                <img src={draft.photo} alt="" width="72" height="72" />
+                {draft.photo && <img src={draft.photo} alt="" width="72" height="72" />}
                 <button type="button" className="ui-button ui-button-secondary" onClick={openPhoto}>Change photo</button>
             </div>
     
@@ -183,7 +183,7 @@ function EditProfileForm({ profile, onSave }) {
             {photoOpen && (
                 <div className="photo-dialog">
                     <div className="photo-panel">
-                        <img src={photoChoice || draft.photo} alt="" width="72" height="72" />
+                        {(photoChoice || draft.photo) && <img src={photoChoice || draft.photo} alt="" width="72" height="72" />}
                         <button type="button" className="ui-button ui-button-secondary" onClick={takePhoto}>Take Photo Now</button>
                         <button type="button" className="ui-button ui-button-secondary" onClick={chooseAlbum}>Choose from Album</button>
                         <div className="edit-actions">

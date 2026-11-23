@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { signUp } from '../data/api.js'
+import { useAppState } from '../data/useAppState.js'
 import './Auth.css'
 
 const EMPTY_FORM = { name: '', email: '', password: '', confirm: '' }
 const SIGN_UP_ERROR = "Email in use or passwords don't match. Sign in or use matching passwords."
 
 function SignUp() {
+  const { signUp } = useAppState()
   const [form, setForm] = useState(EMPTY_FORM)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)

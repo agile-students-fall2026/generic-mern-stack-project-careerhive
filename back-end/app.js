@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { randomUUID } from 'node:crypto'
+import { auth, guestProfile } from './auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const jobs = JSON.parse(readFileSync(new URL('./data/jobs.json', import.meta.url), 'utf8'))
 const matches = JSON.parse(readFileSync(new URL('./data/matches.json', import.meta.url), 'utf8'))
-const demoProfile = JSON.parse(readFileSync(new URL('./data/profile.json', import.meta.url), 'utf8'))
 const roles = JSON.parse(readFileSync(new URL('./data/roles.json', import.meta.url), 'utf8'))
 const applications = JSON.parse(readFileSync(new URL('./data/applications.json', import.meta.url), 'utf8'))
 
@@ -21,15 +21,16 @@ const applicationStages = new Set([
   'Offer',
 ])
 
-let savedProfile = structuredClone(demoProfile)
+app.use('/api', auth)
 
 function textList(value) {
   if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || item.trim() === '')) return null
   return value.map(item => item.trim())
 }
 
-function validProfile(body) {
+function validProfile(body, savedProfile) {
   if (!body || typeof body !== 'object') return null
+  if (body.id !== savedProfile.id) return null
   const fields = ['name', 'email', 'photo', 'degree', 'major', 'school', 'graduationDate', 'workAuthorization']
   if (!fields.every(key => typeof body[key] === 'string')) return null
   const skills = textList(body.skills)
@@ -41,7 +42,7 @@ function validProfile(body) {
     id: savedProfile.id,
     revision: savedProfile.revision + 1,
     name: body.name.trim(),
-    email: body.email.trim(),
+    email: savedProfile.email,
     photo: body.photo.trim(),
     degree: body.degree.trim(),
     major: body.major.trim(),
@@ -230,7 +231,7 @@ app.use(express.json())
 
 app.use('/api/matches', (req, res) => {
   const saved = req.body?.profile
-  if (req.method === 'POST' && (!saved || saved.id !== demoProfile.id || !Number.isInteger(saved.revision) || saved.revision < 1
+  if (req.method === 'POST' && (!req.account || !saved || saved.id !== req.account.profile.id || !Number.isInteger(saved.revision) || saved.revision < 1
     || ![saved.major, saved.graduationDate, saved.workAuthorization].every(value => typeof value === 'string' && value.trim())
     || !Array.isArray(saved.skills) || !saved.skills.length
     || !saved.skills.every(skill => typeof skill === 'string' && skill.trim()))) {
@@ -276,14 +277,15 @@ app.use('/api/profile', (req, res, next) => {
 })
 
 app.get('/api/profile', (req, res) => {
-  res.json(savedProfile)
+  res.json(req.account?.profile ?? guestProfile)
 })
 
 app.post('/api/profile', (req, res) => {
-  const nextProfile = validProfile(req.body)
+  if (!req.account) return res.status(401).json({ error: 'Please sign in to save your profile.' })
+  const nextProfile = validProfile(req.body, req.account.profile)
   if (!nextProfile) return res.status(400).json({ error: 'Profile is not valid' })
-  savedProfile = nextProfile
-  res.json(savedProfile)
+  req.account.profile = nextProfile
+  res.json(nextProfile)
 })
 
 app.get('/api/roles', (req, res) => {

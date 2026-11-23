@@ -24,6 +24,7 @@ function App() {
   const [hash, setHash] = useState(() => window.location.hash)
   const [attempt, setAttempt] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
   const [resources, setResources] = useState({ browse: null, details: null })
   const [browseFilters, setBrowseFilters] = useState(DEFAULT_FILTERS)
   const appState = useAppState()
@@ -111,8 +112,14 @@ function App() {
     }
   }
 
-  function logOut() {
-    appState.resetAll()
+  async function logOut() {
+    setLogoutError('')
+    try {
+      await appState.resetAll()
+    } catch (error) {
+      setLogoutError(error.message)
+      return
+    }
     setMenuOpen(false)
     setResources({ browse: null, details: null })
     setBrowseFilters(DEFAULT_FILTERS)
@@ -138,7 +145,7 @@ function App() {
         <a href="#/home" aria-label="CareerHive — Home">CareerHive</a>
         <button type="button" className="ui-button ui-button-secondary" onClick={() => setMenuOpen(true)}>Menu</button>
       </header>
-      {menuOpen && <Menu onClose={() => setMenuOpen(false)} onLogOut={logOut} />}
+      {menuOpen && <Menu onClose={() => setMenuOpen(false)} onLogOut={logOut} logoutError={logoutError} />}
       <p className="demo-notice">Fictional listings. Application links open example pages.</p>
       {path === '/profile-setup' ? (
         <ProfileSetup />
