@@ -28,10 +28,94 @@ describe('application routes', () => {
   })
 
   it('rejects other methods and leaves the list unchanged', async () => {
-    const res = await request.execute(app).post('/api/applications')
+    const res = await request.execute(app).put('/api/applications')
     expect(res).to.have.status(405)
-    expect(res.headers.allow).to.equal('GET')
+    expect(res.headers.allow).to.equal('GET, POST')
     const current = await request.execute(app).get('/api/applications')
     expect(current.body).to.deep.equal(applications)
   })
+
+
+describe('application write routes', () => {
+  it('creates, updates and removes an application', async () => {
+    const jobs = JSON.parse(
+      readFileSync(new URL('../data/jobs.json', import.meta.url), 'utf8')
+    )
+
+    const availableJob = jobs.find(
+      job => !applications.some(application => application.jobId === job.id)
+    )
+
+    expect(availableJob).to.exist
+
+    const created = await request.execute(app)
+      .post('/api/applications')
+      .send({
+        jobId: availableJob.id,
+        stage: 'Preparing',
+        note: 'Test application',
+      })
+
+    expect(created).to.have.status(201)
+    expect(created.body.jobId).to.equal(availableJob.id)
+    expect(created.body.stage).to.equal('Preparing')
+    expect(created.body.history).to.have.length(1)
+
+    const id = created.body.id
+
+    const duplicate = await request.execute(app)
+      .post('/api/applications')
+      .send({ jobId: availableJob.id })
+
+    expect(duplicate).to.have.status(409)
+
+    const updated = await request.execute(app)
+      .post('/api/applications/' + id)
+      .send({ stage: 'Applied' })
+
+    expect(updated).to.have.status(200)
+    expect(updated.body.stage).to.equal('Applied')
+    expect(updated.body.history).to.have.length(2)
+
+    const noteUpdate = await request.execute(app)
+      .post('/api/applications/' + id)
+      .send({ note: 'Updated note' })
+
+    expect(noteUpdate).to.have.status(200)
+    expect(noteUpdate.body.note).to.equal('Updated note')
+    expect(noteUpdate.body.history).to.have.length(2)
+
+    const legacyUpdate = await request.execute(app)
+      .patch('/api/applications/' + id)
+      .send({ note: 'PATCH compatibility' })
+
+    expect(legacyUpdate).to.have.status(200)
+    expect(legacyUpdate.body.note).to.equal('PATCH compatibility')
+
+    const removed = await request.execute(app)
+      .delete('/api/applications/' + id)
+
+    expect(removed).to.have.status(204)
+
+    const missing = await request.execute(app)
+      .get('/api/applications/' + id)
+
+    expect(missing).to.have.status(404)
+  })
+
+  it('rejects invalid application data and missing records', async () => {
+    const invalid = await request.execute(app)
+      .post('/api/applications')
+      .send({ jobId: 'unknown-job', stage: 'Saved' })
+
+    expect(invalid).to.have.status(400)
+
+    const missing = await request.execute(app)
+      .patch('/api/applications/missing')
+      .send({ stage: 'Applied' })
+
+    expect(missing).to.have.status(404)
+  })
+})
+
 })

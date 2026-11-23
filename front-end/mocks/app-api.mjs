@@ -1,8 +1,5 @@
 import { readFileSync } from "node:fs";
 
-const profile = JSON.parse(
-  readFileSync(new URL("./profile.json", import.meta.url), "utf8"),
-);
 
 const discussions = JSON.parse(
   readFileSync(new URL("./discussions.json", import.meta.url), "utf8"),

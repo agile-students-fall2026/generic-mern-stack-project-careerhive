@@ -17,6 +17,50 @@ export function getApplications() {
   return request('/api/applications')
 }
 
+
+export function createApplication(jobId, stage = 'Saved', note = '') {
+  return post('/api/applications', { jobId, stage, note })
+}
+
+export async function postApplicationUpdate(applicationId, change) {
+  const response = await fetch(
+    '/api/applications/' + encodeURIComponent(applicationId),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(change),
+    }
+  )
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data?.error || 'Could not update application')
+  }
+
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid application update response')
+  }
+
+  return data
+}
+
+export async function deleteApplication(applicationId) {
+  const response = await fetch(
+    '/api/applications/' + encodeURIComponent(applicationId),
+    { method: 'DELETE' }
+  )
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data.error || 'Could not remove application')
+  }
+}
+
+
 export function getDiscussions() {
   return request('/api/discussions')
 }

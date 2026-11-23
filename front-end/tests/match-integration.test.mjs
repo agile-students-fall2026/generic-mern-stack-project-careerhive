@@ -14,6 +14,7 @@ const jobs = fixture('jobs')
 const originalFetch = globalThis.fetch
 let server, dom, root, App, AppState, useAppState, currentState
 let requests, matchHandler, profileHandler
+let applicationStore, profileStore, applicationCounter
 const response = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
 function match(jobId, saved = profile, changes = {}) {
@@ -21,10 +22,105 @@ function match(jobId, saved = profile, changes = {}) {
     summary: `Mock result for saved skills: ${saved.skills.join(', ')}`,
     fitExplanation: ['A supplied fixture explanation.'], missingSkills: ['Git'], keyQualifications: ['A supplied qualification.'], ...changes }
 }
+
+
+function mockApplication(path, options = {}) {
+  const method = options.method ?? 'GET'
+
+  if (path === '/api/applications') {
+    if (method === 'GET') {
+      return Promise.resolve(response(applicationStore))
+    }
+
+    if (method === 'POST') {
+      const input = JSON.parse(options.body ?? '{}')
+
+      if (!jobs.some(job => job.id === input.jobId)) {
+        return Promise.resolve(response({ error: 'Invalid application data' }, 400))
+      }
+
+      if (applicationStore.some(item => item.jobId === input.jobId)) {
+        return Promise.resolve(response({ error: 'Application already exists' }, 409))
+      }
+
+      const stage = input.stage ?? 'Saved'
+      const at = new Date().toISOString()
+      const created = {
+        id: `test-application-${++applicationCounter}`,
+        jobId: input.jobId,
+        stage,
+        note: input.note ?? '',
+        updatedAt: at,
+        history: [{ stage, at }],
+      }
+
+      applicationStore.push(created)
+      return Promise.resolve(response(created, 201))
+    }
+
+    return Promise.resolve(response({ error: 'Method not allowed' }, 405))
+  }
+
+  const prefix = '/api/applications/'
+  const id = decodeURIComponent(path.slice(prefix.length))
+  const index = applicationStore.findIndex(item => item.id === id)
+
+  if (index === -1) {
+    return Promise.resolve(response({ error: 'Application not found' }, 404))
+  }
+
+  if (method === 'GET') {
+    return Promise.resolve(response(applicationStore[index]))
+  }
+
+  if (method === 'DELETE') {
+    applicationStore.splice(index, 1)
+    return Promise.resolve(new Response(null, { status: 204 }))
+  }
+
+  if (method === 'POST' || method === 'PATCH') {
+    const change = JSON.parse(options.body ?? '{}')
+    const current = applicationStore[index]
+    const at = new Date().toISOString()
+
+    const stageChanged = Object.hasOwn(change, 'stage') &&
+      change.stage !== current.stage
+
+    const updated = {
+      ...current,
+      ...(Object.hasOwn(change, 'stage') ? { stage: change.stage } : {}),
+      ...(Object.hasOwn(change, 'note') ? { note: change.note } : {}),
+      updatedAt: at,
+      history: stageChanged
+        ? [...current.history, { stage: change.stage, at }]
+        : [...current.history],
+    }
+
+    applicationStore[index] = updated
+    return Promise.resolve(response(updated))
+  }
+
+  return Promise.resolve(response({ error: 'Method not allowed' }, 405))
+}
+
 function serve(url, options = {}) {
   const path = String(url)
-  if (path === '/api/profile') return profileHandler()
-  if (path === '/api/applications') return Promise.resolve(response(applications))
+  if (path === '/api/profile') {
+    if (options.method === 'POST') {
+      const nextProfile = JSON.parse(options.body)
+      profileStore = {
+        ...nextProfile,
+        id: profileStore.id,
+        revision: profileStore.revision + 1,
+      }
+      return Promise.resolve(response(profileStore))
+    }
+    return profileHandler()
+  }
+
+  if (path === '/api/applications' || path.startsWith('/api/applications/')) {
+    return mockApplication(path, options)
+  }
   if (path === '/api/discussions') return Promise.resolve(response(posts))
   if (path === '/api/jobs') return Promise.resolve(response(jobs))
   if (path.startsWith('/api/jobs/')) return Promise.resolve(response(jobs.find(job => path === `/api/jobs/${job.id}`) ?? null))
@@ -51,7 +147,11 @@ beforeEach(async () => {
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
   dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
   requests = []
-  profileHandler = () => Promise.resolve(response(profile))
+  applicationStore = structuredClone(applications)
+  profileStore = structuredClone(profile)
+  applicationCounter = 0
+
+  profileHandler = () => Promise.resolve(response(profileStore))
   matchHandler = request => Promise.resolve(response(match(request.jobId, request.profile)))
   globalThis.fetch = serve
   const { createRoot } = await import('react-dom/client')
@@ -175,15 +275,15 @@ test('Cancel preserves saved profile while Save refreshes analysis for its new r
   await waitFor(() => Boolean(button('See full analysis')))
   await navigate('/profile/edit')
   await waitFor(() => Boolean(document.querySelector('input[name="name"]')))
-  await type(Array.from(document.querySelectorAll('label')).find(label => label.textContent.trim() === 'Skills')?.querySelector('input'), 'Git')
-  const skillInput = Array.from(document.querySelectorAll('label')).find(label => label.textContent.trim() === 'Skills').querySelector('input')
+  await type(Array.from(document.querySelectorAll('label')).find(label => label.textContent.trim() === 'Add a skill')?.querySelector('input'), 'Git')
+  const skillInput = Array.from(document.querySelectorAll('label')).find(label => label.textContent.trim() === 'Add a skill').querySelector('input')
   await act(async () => skillInput.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
   await click(button('Cancel'))
   assert.equal(currentState.profile.revision, profile.revision)
   assert.ok(!currentState.profile.skills.includes('Git'))
   await navigate('/profile/edit')
   await waitFor(() => Boolean(document.querySelector('input[name="name"]')))
-  const input = Array.from(document.querySelectorAll('label')).find(label => label.textContent.trim() === 'Skills').querySelector('input')
+  const input = Array.from(document.querySelectorAll('label')).find(label => label.textContent.trim() === 'Add a skill').querySelector('input')
   await type(input, 'Git')
   await act(async () => input.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
   await click(button('Save Changes'))
@@ -250,16 +350,37 @@ test('logout restores saved session records and clears Browse controls without a
   await mount('/jobs')
   await waitFor(() => currentState.status === 'ready' && Boolean(document.querySelector('input[type="search"]')))
   await act(async () => {
-    currentState.saveProfile({ ...profile, name: 'Edited session name' })
-    currentState.updateApplication(applications[0].id, { note: 'Edited note' })
-    currentState.addPost(jobs[0].id, { topic: 'Interview', body: 'Session post', anonymous: true })
+    const profileSave = currentState.saveProfile({
+      ...profile,
+      name: 'Edited session name',
+    })
+
+    const applicationSave = currentState.updateApplication(
+      applications[0].id,
+      { note: 'Edited note' }
+    )
+
+    currentState.addPost(jobs[0].id, {
+      topic: 'Interview',
+      body: 'Session post',
+      anonymous: true,
+    })
+
+    await Promise.all([profileSave, applicationSave])
   })
   await type(document.querySelector('input[type="search"]'), 'Brightspace')
   await click(button('Menu'))
   await click(Array.from(document.querySelectorAll('a,button')).find(item => item.textContent.trim() === 'Log Out'))
   await waitFor(() => window.location.hash === '#/welcome')
   assert.deepEqual(currentState.profile, profile)
-  assert.deepEqual(currentState.applications, applications)
+  assert.deepEqual(currentState.applications, applicationStore)
+
+  assert.equal(
+    currentState.applications.find(
+      item => item.id === applications[0].id
+    ).note,
+    'Edited note'
+  )
   assert.deepEqual(currentState.posts, posts)
   await navigate('/jobs')
   await waitFor(() => Boolean(document.querySelector('input[type="search"]')))
@@ -281,10 +402,21 @@ test('queued shared updates preserve earlier application changes and distinct po
   await mount('/profile')
   await waitFor(() => currentState.status === 'ready')
   await act(async () => {
-    currentState.updateApplication(applications[0].id, { stage: 'Applied' })
-    currentState.updateApplication(applications[0].id, { note: 'Keep the new stage' })
-    currentState.addPost(jobs[0].id, { topic: 'Interview', body: 'First post', anonymous: false })
-    currentState.addPost(jobs[0].id, { topic: 'Interview', body: 'Second post', anonymous: false })
+    const stageWrite = currentState.updateApplication(
+      applications[0].id, { stage: 'Applied' }
+    )
+    const noteWrite = currentState.updateApplication(
+      applications[0].id, { note: 'Keep the new stage' }
+    )
+
+    currentState.addPost(jobs[0].id, {
+      topic: 'Interview', body: 'First post', anonymous: false,
+    })
+    currentState.addPost(jobs[0].id, {
+      topic: 'Interview', body: 'Second post', anonymous: false,
+    })
+
+    await Promise.all([stageWrite, noteWrite])
   })
   const updated = currentState.applications.find(item => item.id === applications[0].id)
   assert.equal(updated.stage, 'Applied')
@@ -292,6 +424,79 @@ test('queued shared updates preserve earlier application changes and distinct po
   assert.equal(currentState.posts.length, posts.length + 2)
   assert.notEqual(currentState.posts[0].id, currentState.posts[1].id)
 })
+
+
+test('application writes remain ordered when a later response is ready first', async () => {
+  await mount('/profile')
+  await waitFor(() => currentState.status === 'ready')
+
+  const original = applications[0]
+  const id = original.id
+  const firstResponse = deferred()
+  const secondResponse = deferred()
+  const sent = []
+
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = (url, options = {}) => {
+    if (
+      String(url) === '/api/applications/' + encodeURIComponent(id) &&
+      options.method === 'POST'
+    ) {
+      const change = JSON.parse(options.body)
+      sent.push(change)
+
+      return Object.hasOwn(change, 'stage')
+        ? firstResponse.promise
+        : secondResponse.promise
+    }
+
+    return previousFetch(url, options)
+  }
+
+  let stageWrite
+  let noteWrite
+
+  await act(async () => {
+    stageWrite = currentState.updateApplication(id, { stage: 'Applied' })
+    noteWrite = currentState.updateApplication(id, { note: 'Keep both changes' })
+    await tick()
+  })
+
+  // The second write must wait while the first is pending.
+  assert.deepEqual(sent, [{ stage: 'Applied' }])
+
+  const at = new Date().toISOString()
+  const stageResult = {
+    ...original,
+    stage: 'Applied',
+    updatedAt: at,
+    history: [...original.history, { stage: 'Applied', at }],
+  }
+
+  // Make the second response ready before releasing the first.
+  secondResponse.resolve(
+    response({ ...stageResult, note: 'Keep both changes' })
+  )
+
+  await act(async () => { await tick() })
+  assert.equal(sent.length, 1)
+
+  firstResponse.resolve(response(stageResult))
+
+  await act(async () => {
+    await Promise.all([stageWrite, noteWrite])
+  })
+
+  assert.deepEqual(sent, [
+    { stage: 'Applied' },
+    { note: 'Keep both changes' },
+  ])
+
+  const saved = currentState.applications.find(item => item.id === id)
+  assert.equal(saved.stage, 'Applied')
+  assert.equal(saved.note, 'Keep both changes')
+})
+
 
 const roleInput = role => Array.from(document.querySelectorAll('label'))
   .find(label => label.textContent.trim() === role)?.querySelector('input[type="checkbox"]')
@@ -361,6 +566,7 @@ test('saving a new listing links directly to its application with the selected s
   await mount(`/jobs/${job.id}`)
   await waitFor(() => Boolean(button('Save to Tracker')))
   await click(button('Save to Tracker'))
+  
   await act(async () => {
     const stage = document.querySelector('#save-tracker-stage')
     stage.value = 'Preparing'
@@ -370,6 +576,9 @@ test('saving a new listing links directly to its application with the selected s
     note.dispatchEvent(new window.Event('input', { bubbles: true }))
   })
   await click(button('Save'))
+  await waitFor(() =>
+    currentState.applications.some(item => item.jobId === job.id)
+  )
   const saved = currentState.applications.find(item => item.jobId === job.id)
   assert.ok(saved)
   const trackerLink = [...document.querySelectorAll('a')].find(link => link.textContent === 'In Tracker: Preparing')
@@ -388,3 +597,152 @@ test('saving a new listing links directly to its application with the selected s
   await navigate('/tracker?application=missing-application')
   await waitFor(() => contains('My Tracker') && document.querySelector('select')?.value === 'All')
 })
+
+
+test('failed Tracker removal keeps the application and shows an error', async () => {
+  const saved = applications[0]
+  const original = globalThis.fetch
+
+  globalThis.fetch = (url, options = {}) => {
+    if (
+      String(url) === `/api/applications/${encodeURIComponent(saved.id)}` &&
+      options.method === 'DELETE'
+    ) {
+      return Promise.resolve(
+        response({ error: 'Test deletion failed' }, 500)
+      )
+    }
+    return original(url, options)
+  }
+
+  dom.window.confirm = () => true
+
+  await mount(`/tracker?application=${encodeURIComponent(saved.id)}`)
+  await waitFor(() => contains('Application Details'))
+
+  const removeButton = [...document.querySelectorAll('button')]
+    .find(item => /remove/i.test(item.textContent))
+
+  await click(removeButton)
+  await waitFor(() => contains('Test deletion failed'))
+
+  assert.ok(contains('Application Details'))
+  assert.ok(
+    currentState.applications.some(item => item.id === saved.id)
+  )
+})
+
+
+test('failed Save to Tracker preserves the selected stage and note draft', async () => {
+  const job = jobs.find(item =>
+    !applications.some(application => application.jobId === item.id)
+  )
+
+  const original = globalThis.fetch
+
+  globalThis.fetch = (url, options = {}) => {
+    if (
+      String(url) === '/api/applications' &&
+      options.method === 'POST'
+    ) {
+      return Promise.resolve(
+        response({ error: 'Test save failed' }, 500)
+      )
+    }
+    return original(url, options)
+  }
+
+  await mount(`/jobs/${encodeURIComponent(job.id)}`)
+  await waitFor(() => Boolean(button('Save to Tracker')))
+  await click(button('Save to Tracker'))
+
+  await act(async () => {
+    const stage = document.querySelector('#save-tracker-stage')
+    stage.value = 'Preparing'
+    stage.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+
+    const note = document.querySelector('#save-tracker-note')
+    Object.getOwnPropertyDescriptor(
+      dom.window.HTMLTextAreaElement.prototype, 'value'
+    ).set.call(note, 'Important draft note')
+    note.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+  })
+
+  await click(button('Save'))
+  await waitFor(() => contains('Test save failed'))
+
+  assert.equal(
+    document.querySelector('#save-tracker-stage').value,
+    'Preparing'
+  )
+  assert.equal(
+    document.querySelector('#save-tracker-note').value,
+    'Important draft note'
+  )
+  assert.equal(
+    currentState.applications.some(item => item.jobId === job.id),
+    false
+  )
+})
+
+
+for (const { route, selector } of [
+  { route: '/home', selector: '.home-deadline' },
+  { route: '/deadlines', selector: '.deadline-row' },
+]) {
+  test(`failed removal from ${route} keeps Application Details open`, async () => {
+    const saved = applications[0]
+    const savedJob = jobs.find(job => job.id === saved.jobId)
+    const originalDeadline = savedJob.deadline
+    const originalFetch = globalThis.fetch
+
+    // Ensure the saved application has an upcoming deadline.
+    savedJob.deadline = '2099-12-31'
+
+    globalThis.fetch = (url, options = {}) => {
+      if (
+        String(url).startsWith('/api/applications/') &&
+        options.method === 'DELETE'
+      ) {
+        return Promise.resolve(
+          response({ error: 'Test deletion failed' }, 500)
+        )
+      }
+
+      return originalFetch(url, options)
+    }
+
+    dom.window.confirm = () => true
+
+    try {
+      await mount(route)
+
+      if (route === '/deadlines') {
+        await waitFor(() => Boolean(button('All')))
+        await click(button('All'))
+      }
+
+      await waitFor(() => Boolean(document.querySelector(selector)))
+
+      const originalIds = currentState.applications.map(item => item.id)
+
+      await click(document.querySelector(selector))
+      await waitFor(() => contains('Application Details'))
+
+      const removeButton = [...document.querySelectorAll('button')]
+        .find(item => /remove/i.test(item.textContent))
+
+      await click(removeButton)
+      await waitFor(() => contains('Test deletion failed'))
+
+      // A failed DELETE must not close Details or remove the record.
+      assert.ok(contains('Application Details'))
+      assert.deepEqual(
+        currentState.applications.map(item => item.id),
+        originalIds
+      )
+    } finally {
+      savedJob.deadline = originalDeadline
+    }
+  })
+}

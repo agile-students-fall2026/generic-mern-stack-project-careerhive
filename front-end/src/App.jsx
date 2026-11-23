@@ -76,7 +76,7 @@ function App() {
   }
 
   // Issue #66: Save a job from Job Details to Tracker
-  function saveCurrentJobToTracker({ stage, note }) {
+  async function saveCurrentJobToTracker({ stage, note }) {
     if (appState.status !== 'ready' || !appState.addApplication) {
       return {
         ok: false,
@@ -91,21 +91,24 @@ function App() {
       }
     }
 
-    const saved = appState.addApplication(
-      current.data.id,
-      stage,
-      note
-    )
+    try {
+      const saved = await appState.addApplication(
+        current.data.id,
+        stage,
+        note
+      )
 
-    return saved
-      ? {
-          ok: true,
-          message: 'Job saved to Tracker.',
-        }
-      : {
-          ok: false,
-          message: 'This job is already in your Tracker.',
-        }
+      return saved
+        ? { ok: true, message: 'Job saved to Tracker.' }
+        : { ok: false, message: 'This job is already in your Tracker.' }
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error
+          ? error.message
+          : 'Unable to save this job.',
+      }
+    }
   }
 
   function logOut() {
