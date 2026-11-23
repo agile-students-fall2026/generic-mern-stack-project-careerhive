@@ -213,6 +213,11 @@ app.use('/api/applications', (req, res) => {
   res.status(application ? 200 : 404).json(application ?? { error: 'Application not found' })
 })
 
+app.use('/api/applications', (error, req, res, next) => {
+  if (!(error instanceof URIError)) return next(error)
+  res.set('Cache-Control', 'no-store').status(400).json({ error: 'Invalid application identifier' })
+})
+
 app.use('/api/matches', (req, res, next) => {
   res.set('Cache-Control', 'no-store')
   if (req.method !== 'GET' && req.method !== 'POST') {

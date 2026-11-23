@@ -61,12 +61,18 @@ describe('application routes', () => {
 })
 
 it('rejects malformed application identifiers', async () => {
-  const res = await request.execute(app)
-    .get('/api/applications/%ZZ')
-
-  expect(res).to.have.status(400)
-  expect(res.body).to.deep.equal({
-    error: 'Invalid application identifier',
+  for (const method of ['get', 'post', 'patch', 'delete']) {
+    for (const id of ['%ZZ', '%E0%A4%A']) {
+      const res = await request.execute(app)[method]('/api/applications/' + id)
+      expect(res).to.have.status(400)
+      expect(res).to.be.json
+      expect(res.headers['cache-control']).to.equal('no-store')
+      expect(res.body).to.deep.equal({ error: 'Invalid application identifier' })
+    }
+  }
+  const current = await request.execute(app).get('/api/applications')
+  expect(current.body).to.deep.equal(applications)
+})
 
 describe('application write routes', () => {
   it('creates, updates and removes an application', async () => {
