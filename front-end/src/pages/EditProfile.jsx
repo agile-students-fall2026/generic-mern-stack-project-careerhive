@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppState } from '../data/useAppState.js'
 import './EditProfile.css'
-import roleChoices from '../../mocks/roles.json'
+import { getRoles } from '../data/api.js'
+
+const workChoices = [
+    'F-1 student (will need sponsorship)',
+    'U.S. citizen or permanent resident',
+    'Already authorized to work in the U.S.',
+]
 
 function EditProfile() {
     const appState = useAppState()
@@ -17,6 +23,20 @@ function EditProfileForm({ profile, onSave }) {
     const [skillInput, setSkillInput] = useState('')
     const [locationInput, setLocationInput] = useState('')
     const [saveError, setSaveError] = useState('')
+    const [roles, setRoles] = useState([])
+    const [rolesError, setRolesError] = useState('')
+
+    useEffect(() => {
+        let active = true
+        getRoles().then((list) => {
+            if (!active) return
+            setRoles(Array.isArray(list) ? list : [])
+        }, () => {
+            if (!active) return
+            setRolesError('Could not load roles.')
+        })
+        return () => { active = false }
+    }, [])
 
     function changeField(event) {
         setDraft({ ...draft, [event.target.name]: event.target.value })
@@ -101,6 +121,9 @@ function EditProfileForm({ profile, onSave }) {
     function cancelEdit() {
         window.location.hash = '#/profile'
     }
+    const authorizationChoices = workChoices.includes(draft.workAuthorization) || draft.workAuthorization === ''
+        ? workChoices
+        : workChoices.concat(draft.workAuthorization)
 
     return (
         <section className="edit-profile">
@@ -123,11 +146,14 @@ function EditProfileForm({ profile, onSave }) {
                 </label>
                 <label>
                     Graduation date
-                    <input className="ui-field" name="graduationDate" value={draft.graduationDate} onChange={changeField} />
+                    <input className="ui-field" type="date" name="graduationDate" value={draft.graduationDate} onChange={changeField} />
                 </label>
                 <label>
                     Work authorization
-                    <input className="ui-field" name="workAuthorization" value={draft.workAuthorization} onChange={changeField} />
+                    <select className="ui-field" name="workAuthorization" value={draft.workAuthorization} onChange={changeField}>
+                        <option value="">Select one</option>
+                        {authorizationChoices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+                    </select>
                 </label>
             </section>
     
@@ -166,7 +192,8 @@ function EditProfileForm({ profile, onSave }) {
             <section className="edit-card">
                 <h2>Looking for</h2>
                 <fieldset className="edit-roles">
-                    {roleChoices.map((role) => (
+                    {rolesError ? <p role="alert">{rolesError}</p> : null}
+                    {roles.map((role) => (
                         <label key={role}>
                             <input type="checkbox" checked={draft.lookingFor.includes(role)} onChange={() => toggleRole(role)} />
                             {role}

@@ -9,6 +9,10 @@ export function getProfile() {
   return request('/api/profile')
 }
 
+export function getRoles() {
+  return request('/api/roles')
+}
+
 export function saveProfile(profile) {
   return post('/api/profile', profile)
 }
