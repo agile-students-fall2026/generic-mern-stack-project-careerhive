@@ -213,11 +213,11 @@ function Tracker({ initialStage, initialApplicationId }) {
 
   if (!appState) {
     return (
-      <main className="app">
+      <section className="tracker">
         <p>
           Application data is unavailable.
         </p>
-      </main>
+      </section>
     )
   }
 
@@ -226,9 +226,9 @@ function Tracker({ initialStage, initialApplicationId }) {
     jobsStatus === "loading"
   ) {
     return (
-      <main className="app">
+      <section className="tracker">
         <p>Loading tracker...</p>
-      </main>
+      </section>
     )
   }
 
@@ -237,11 +237,11 @@ function Tracker({ initialStage, initialApplicationId }) {
     jobsStatus === "error"
   ) {
     return (
-      <main className="app">
+      <section className="tracker">
         <p>
           Could not load tracker data.
         </p>
-      </main>
+      </section>
     )
   }
 
@@ -290,10 +290,8 @@ function Tracker({ initialStage, initialApplicationId }) {
   }
 
   return (
-    <main className="app">
-      <h1>CareerHive</h1>
-
-      <h2>My Tracker</h2>
+    <section className="tracker">
+      <h1>My Tracker</h1>
 
       <p>
         Total applications:{" "}
@@ -371,7 +369,7 @@ function Tracker({ initialStage, initialApplicationId }) {
             }
           />
         ))}
-    </main>
+    </section>
   )
 }
 
