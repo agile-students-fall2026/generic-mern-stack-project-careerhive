@@ -141,6 +141,7 @@ function StageSection({
             </p>
 
             <button
+              className="ui-button ui-button-secondary"
               onClick={() =>
                 onViewDetails(application.id)
               }
@@ -153,6 +154,7 @@ function StageSection({
 
       {stageApplications.length > 2 && (
         <button
+          className="ui-button ui-button-secondary"
           onClick={() =>
             setExpanded(!expanded)
           }
