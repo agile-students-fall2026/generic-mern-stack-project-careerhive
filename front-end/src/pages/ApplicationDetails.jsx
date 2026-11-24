@@ -112,7 +112,9 @@ function ApplicationDetails({
 
       <h2>{job?.title || "Unknown job"}</h2>
       <p>{job?.company || "Unknown company"}</p>
-
+      <a href={`#/jobs/${encodeURIComponent(application.jobId)}`}>
+        View job listing
+      </a>
       <section>
         <h3>Current Stage</h3>
 
