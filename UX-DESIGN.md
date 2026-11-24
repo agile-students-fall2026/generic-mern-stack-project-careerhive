@@ -164,7 +164,7 @@ The dashboard a user sees after logging in. It shows what needs their attention 
 
 #### 8. Home with Menu Open
 
-Tapping the menu button on any logged-in screen slides this menu in from the right. It links to every main section and has the Log Out option. Tapping "Close" or the darkened area closes it. Home is shown underneath, but the menu works the same way from every screen.
+Tapping the menu button on any logged-in screen slides this menu in from the left. It links to every main section and has the Log Out option. Tapping "Close" or the darkened area closes it. Home is shown underneath, but the menu works the same way from every screen.
 
 <img src="./ux-design/wireframes-08-home-menu.drawio.png" alt="Home with menu open wireframe" width="300">
 
