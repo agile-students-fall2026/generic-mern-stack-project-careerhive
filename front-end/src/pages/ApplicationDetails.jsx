@@ -47,6 +47,7 @@ function ApplicationDetails({
   const noteChanged = draftNote !== savedNote
 
   const [actionError, setActionError] = useState('')
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   async function runAction(action) {
     setActionError('')
@@ -92,13 +93,8 @@ function ApplicationDetails({
   }
 
   async function handleRemove() {
-    const confirmed = window.confirm(
-      'Are you sure you want to remove this application from your Tracker?'
-    )
-
-    if (!confirmed) return
-
     await runAction(() => onRemove())
+
   }
 
   return (
@@ -217,9 +213,31 @@ function ApplicationDetails({
           Removing this application will remove it from your Tracker.
         </p>
 
-        <button onClick={handleRemove}>
-          Remove Application
-        </button>
+                {confirmingRemove ? (
+          <div role="alertdialog" aria-labelledby="remove-confirm-text">
+            <p id="remove-confirm-text">
+              Remove this application from your Tracker?
+            </p>
+
+            <button type="button" onClick={handleRemove}>
+              Yes, remove
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setConfirmingRemove(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmingRemove(true)}
+          >
+            Remove Application
+          </button>
+        )}
       </section>
     </main>
   )
