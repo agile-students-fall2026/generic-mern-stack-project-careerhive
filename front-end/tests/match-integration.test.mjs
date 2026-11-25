@@ -198,6 +198,50 @@ async function type(element, value, key) {
 const detailRoute = index => `/jobs/${encodeURIComponent(jobs[index].id)}`
 const contains = text => document.body.textContent.includes(text)
 
+test('deadline tabs exclude yesterday, retain today, and respect week/month boundaries', async (context) => {
+  context.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-19T16:00:00Z') })
+  const deadlines = ['2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22', '2026-11-30', '2026-12-01', null, '2026-11-20']
+  const catalog = jobs.map((job, index) => ({ ...job, deadline: deadlines[index] }))
+  applicationStore = catalog.map((job, index) => ({ ...applications[0], id: `deadline-${index}`, jobId: job.id, stage: 'Saved' }))
+  applicationStore[8].stage = 'Offer'
+  applicationStore.push({ ...applicationStore[8], id: 'rejected', stage: 'Rejected' })
+  globalThis.fetch = (url, options) => String(url) === '/api/jobs' ? Promise.resolve(response(catalog)) : serve(url, options)
+  await mount('/deadlines')
+  await waitFor(() => document.querySelector('.deadlines'))
+  const dates = () => [...document.querySelectorAll('.deadline-row')].map(row => row.firstElementChild.textContent)
+  assert.deepEqual(dates(), ['Nov 19, 2026', 'Nov 20, 2026', 'Nov 21, 2026'])
+  assert.match(document.querySelector('.deadline-row').textContent, /Today/)
+  assert.match(document.querySelectorAll('.deadline-row')[1].textContent, /1 day left/)
+  await click(button('This month'))
+  assert.deepEqual(dates(), ['Nov 19, 2026', 'Nov 20, 2026', 'Nov 21, 2026', 'Nov 22, 2026', 'Nov 30, 2026'])
+  await click(button('All'))
+  assert.deepEqual(dates(), ['Nov 19, 2026', 'Nov 20, 2026', 'Nov 21, 2026', 'Nov 22, 2026', 'Nov 30, 2026', 'Dec 1, 2026'])
+  await click([...document.querySelectorAll('.deadline-row')].at(-1))
+  assert.equal(document.querySelector('h2').textContent, catalog[6].title)
+  await act(async () => currentState.updateApplication('deadline-6', { stage: 'Offer' }))
+  await click(button('Back to Tracker'))
+  assert.equal(dates().length, 5, 'Stage changes must update the same deadline list')
+  context.mock.timers.setTime(Date.parse('2027-12-31T16:00:00Z'))
+  await click(button('This week'))
+  assert.ok(contains('No deadlines in this range.'))
+})
+
+test('deadline week spans New Year while this month ends in December', async (context) => {
+  context.mock.timers.enable({ apis: ['Date'], now: new Date('2026-12-31T16:00:00Z') })
+  const deadlines = ['2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02', '2027-01-03']
+  const catalog = jobs.slice(0, deadlines.length).map((job, index) => ({ ...job, deadline: deadlines[index] }))
+  applicationStore = catalog.map((job, index) => ({ ...applications[0], id: `year-${index}`, jobId: job.id, stage: 'Applied' })).reverse()
+  globalThis.fetch = (url, options) => String(url) === '/api/jobs' ? Promise.resolve(response(catalog)) : serve(url, options)
+  await mount('/deadlines')
+  await waitFor(() => document.querySelector('.deadlines'))
+  const dates = () => [...document.querySelectorAll('.deadline-row')].map(row => row.firstElementChild.textContent)
+  assert.deepEqual(dates(), ['Dec 31, 2026', 'Jan 1, 2027', 'Jan 2, 2027'])
+  await click(button('This month'))
+  assert.deepEqual(dates(), ['Dec 31, 2026'])
+  await click(button('All'))
+  assert.deepEqual(dates(), ['Dec 31, 2026', 'Jan 1, 2027', 'Jan 2, 2027', 'Jan 3, 2027'])
+})
+
 test('Home refreshes recommendations for the saved profile and ignores superseded results', async () => {
   const recommendations = () => document.querySelectorAll('.home-recommendation')
   await mount('/home')
