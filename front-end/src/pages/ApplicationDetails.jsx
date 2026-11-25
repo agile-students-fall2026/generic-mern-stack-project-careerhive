@@ -1,5 +1,6 @@
 
 import { useState } from "react"
+import { formatJobDate } from '../jobs/formatters.js'
 
 const stages = [
   "Saved",
@@ -160,7 +161,7 @@ function ApplicationDetails({
 
       <section>
         <h3>Deadline</h3>
-        <p>{formatDate(job?.deadline)}</p>
+        <p>{formatJobDate(job?.deadline) ?? "None"}</p>
       </section>
 
       <section>

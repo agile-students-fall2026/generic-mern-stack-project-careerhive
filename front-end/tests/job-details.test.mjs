@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import process from 'node:process'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
@@ -29,6 +30,21 @@ const job = {
 async function render(props) {
   const { default: JobDetails } = await server.ssrLoadModule('/src/pages/JobDetails.jsx')
   return renderToStaticMarkup(createElement(JobDetails, props))
+}
+
+for (const timeZone of ['America/New_York', 'UTC', 'Asia/Tokyo']) {
+  test(`Application Details keeps the calendar deadline in ${timeZone}`, async (context) => {
+    const originalTimeZone = process.env.TZ
+    process.env.TZ = timeZone
+    context.after(() => { if (originalTimeZone === undefined) delete process.env.TZ; else process.env.TZ = originalTimeZone })
+    const { default: ApplicationDetails } = await server.ssrLoadModule('/src/pages/ApplicationDetails.jsx')
+    const application = { jobId: job.id, stage: 'Saved', note: '', history: [], updatedAt: '2026-11-13T00:30:00Z' }
+    const html = renderToStaticMarkup(createElement(ApplicationDetails, { application, job }))
+    assert.match(html, /<h3>Deadline<\/h3><p>Nov 13, 2026<\/p>/)
+    assert.match(html, new RegExp(`<h3>Last Updated</h3><p>Nov ${timeZone === 'America/New_York' ? 12 : 13}, 2026</p>`))
+    const missing = renderToStaticMarkup(createElement(ApplicationDetails, { application, job: { ...job, deadline: null } }))
+    assert.match(missing, /<h3>Deadline<\/h3><p>None<\/p>/)
+  })
 }
 
 test('the selected job exposes its complete metadata and safe company-site link', async () => {

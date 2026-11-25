@@ -87,7 +87,7 @@ function Deadlines() {
         if (application.stage === 'Offer' || application.stage === 'Rejected') return
         const job = jobs.find((item) => item.id === application.jobId)
         const deadline = utcDay(job && job.deadline)
-        if (deadline === null) return
+        if (deadline === null || deadline < today) return
         if (tab === 'week' && !inThisWeek(deadline, today)) return
         if (tab === 'month' && !inThisMonth(deadline, today)) return
         rows.push({ application, job, deadline })
