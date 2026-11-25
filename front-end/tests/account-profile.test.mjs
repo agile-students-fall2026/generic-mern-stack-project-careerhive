@@ -12,6 +12,7 @@ let vite, backend, origin, App, AppState, useAppState, root, dom, state, cookie,
 let holdStartup, releaseStartup
 let holdSave, releaseSave, heldSaves, failLogout
 let holdAuth, releaseAuth, heldAuth, outgoingAuth
+let failProfile
 before(async () => {
   backend = app.listen(0, '127.0.0.1')
   await once(backend, 'listening')
@@ -28,6 +29,7 @@ before(async () => {
 beforeEach(async () => {
   cookie = ''; calls = []; holdStartup = false; holdSave = false; heldSaves = 0; failLogout = false
   holdAuth = false; heldAuth = 0; outgoingAuth = []
+  failProfile = false
   dom = new JSDOM('<div id="root"></div>', { url: origin + '/#/signup' })
   globalThis.window = dom.window; globalThis.document = dom.window.document
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -37,6 +39,7 @@ beforeEach(async () => {
   globalThis.fetch = async (url, options = {}) => {
     if (['/api/signup', '/api/login'].includes(url)) outgoingAuth.push(url)
     if (url === '/api/logout' && failLogout) return new Response(JSON.stringify({ error: 'Logout unavailable' }), { status: 503 })
+    if (url === '/api/profile' && options.method === 'POST' && failProfile) return new Response(JSON.stringify({ error: 'Profile unavailable' }), { status: 503 })
     const held = url === '/api/profile' ? (options.method === 'POST' ? holdSave : holdStartup)
       : url === '/api/signup' && holdAuth
     const result = await originalFetch(new URL(url, origin), { ...options,
@@ -94,6 +97,130 @@ async function submit(values) {
 }
 const signup = name => submit({ 'signup-name': name, 'signup-email': name + '@example.test',
   'signup-password': 'demo-password', 'signup-confirm': 'demo-password' })
+
+const field = name => document.querySelector(`[name="${name}"]`)
+async function select(name, value) {
+  const input = field(name)
+  assert.equal(input?.tagName, 'SELECT', name + ' must be a dropdown')
+  assert.equal(input.labels[0].textContent.trim(), { major: 'Major', graduationDate: 'Graduation date', workAuthorization: 'Work authorization', locations: 'Preferred locations' }[name])
+  await act(async () => {
+    input.value = value
+    input.dispatchEvent(new window.Event('change', { bubbles: true }))
+  })
+}
+
+test('signup dropdowns save through Express, retain failed drafts and reopen in Edit Profile', async () => {
+  await mount(); await waitFor(() => state.status === 'ready')
+  await signup('Dropdowns'); await waitFor(() => window.location.hash === '#/profile-setup')
+  const graduation = `${new Date().getFullYear() + 2}-05-01`
+  await select('major', 'Computer Science')
+  await select('graduationDate', graduation)
+  await select('workAuthorization', 'Authorized to work; future sponsorship needed (OPT)')
+  const choices = [...field('workAuthorization').options].map(option => option.value)
+  assert.ok(choices.includes('Canadian citizen'))
+  assert.ok(choices.includes('Authorized to work; future sponsorship needed (STEM OPT)'))
+  assert.ok(choices.includes('Requires visa sponsorship (e.g., H-1B)'))
+  assert.ok(!choices.includes('Prefer not to say'))
+  await select('locations', 'New York')
+  await select('locations', 'California')
+  await select('locations', 'New York')
+  assert.equal(field('locations').options.length, 51)
+  assert.ok(![...field('locations').options].some(option => option.value === 'Remote'))
+  assert.equal(document.querySelector('input[name="locations"]'), null)
+  failProfile = true; await click('Save and continue')
+  await waitFor(() => document.querySelector('[role="alert"]'))
+  assert.equal(state.profile.major, '')
+  assert.equal(field('major').value, 'Computer Science')
+  assert.match(document.body.textContent, /Profile unavailable/)
+  failProfile = false; await click('Save and continue')
+  await waitFor(() => window.location.hash === '#/home')
+  let saved
+  await act(async () => { saved = await (await fetch('/api/profile')).json(); await tick() })
+  assert.equal(saved.major, 'Computer Science')
+  assert.equal(saved.graduationDate, graduation)
+  assert.equal(saved.workAuthorization, choices.find(value => value.endsWith('(OPT)')))
+  assert.deepEqual(saved.locations, ['New York', 'California'])
+  await navigate('/profile/edit')
+  assert.equal(field('major').value, saved.major)
+  assert.equal(field('graduationDate').value, saved.graduationDate)
+  assert.deepEqual([...field('workAuthorization').options].map(option => option.value), choices)
+  await select('locations', 'Texas')
+  await click('New York')
+  await select('major', 'Data Science'); await click('Cancel')
+  assert.equal(state.profile.major, saved.major)
+  assert.deepEqual(state.profile.locations, saved.locations)
+  await navigate('/profile/edit')
+  await select('locations', 'Texas'); await click('California')
+  await click('Save Changes'); await waitFor(() => window.location.hash === '#/profile')
+  assert.deepEqual(state.profile.locations, ['New York', 'Texas'])
+  await navigate('/profile-setup')
+  await select('major', 'Business')
+  const writes = calls.filter(call => call === 'POST /api/profile').length
+  await click('Skip for now'); await waitFor(() => window.location.hash === '#/home')
+  assert.equal(calls.filter(call => call === 'POST /api/profile').length, writes)
+  assert.equal(state.profile.major, saved.major)
+})
+
+test('dropdowns preserve existing profile values that are outside the demo choices', async () => {
+  await mount(); await waitFor(() => state.status === 'ready')
+  await signup('Existingchoices'); await waitFor(() => window.location.hash === '#/profile-setup')
+  await act(async () => state.saveProfile({ ...state.profile, major: 'Physics', graduationDate: '2035-07-15', workAuthorization: 'Existing saved status', locations: ['Remote'] }))
+  await navigate('/profile/edit')
+  for (const [name, value] of Object.entries({ major: 'Physics', graduationDate: '2035-07-15', workAuthorization: 'Existing saved status' })) {
+    assert.equal(field(name).tagName, 'SELECT')
+    assert.equal(field(name).value, value)
+  }
+  await click('Save Changes'); await waitFor(() => window.location.hash === '#/profile')
+  assert.equal(state.profile.major, 'Physics')
+  assert.equal(state.profile.graduationDate, '2035-07-15')
+  assert.deepEqual(state.profile.locations, ['Remote'])
+  await navigate('/profile/edit')
+  assert.ok(![...field('locations').options].some(option => option.value === 'Remote'))
+  await click('Remote'); await click('Save Changes')
+  await waitFor(() => window.location.hash === '#/profile')
+  assert.deepEqual(state.profile.locations, [])
+})
+
+test('Setup and Edit Profile prevent another edit or save while a profile write is pending', async () => {
+  await mount(); await waitFor(() => state.status === 'ready')
+  await signup('Pendingchoices'); await waitFor(() => window.location.hash === '#/profile-setup')
+  for (const [path, save, leave, destination] of [
+    ['/profile-setup', 'Save and continue', 'Skip for now', '#/home'],
+    ['/profile/edit', 'Save Changes', 'Cancel', '#/profile'],
+  ]) {
+    await navigate(path)
+    holdSave = new Promise(resolve => { releaseSave = resolve })
+    const before = heldSaves
+    await click(save); await waitFor(() => heldSaves === before + 1)
+    assert.equal(field('major').matches(':disabled'), true)
+    assert.equal([...document.querySelectorAll('button')].find(button => button.textContent === leave).matches(':disabled'), true)
+    await click('Saving…')
+    assert.equal(heldSaves, before + 1)
+    await act(async () => { releaseSave(); await tick() })
+    await waitFor(() => window.location.hash === destination)
+    holdSave = false
+  }
+})
+
+test('leaving and reopening Edit Profile cannot bypass an in-flight save or cause stale navigation', async () => {
+  await mount(); await waitFor(() => state.status === 'ready')
+  await signup('Reopenchoices'); await waitFor(() => window.location.hash === '#/profile-setup')
+  await click('Skip for now'); await waitFor(() => window.location.hash === '#/home')
+  await navigate('/profile/edit'); await select('major', 'Computer Science')
+  holdSave = new Promise(resolve => { releaseSave = resolve })
+  await click('Save Changes'); await waitFor(() => heldSaves === 1)
+  await click('Back to profile'); await waitFor(() => window.location.hash === '#/profile')
+  await click('Edit Profile'); await select('major', 'Business')
+  await click('Save Changes')
+  assert.equal(heldSaves, 1)
+  assert.match(document.body.textContent, /already saving/)
+  await act(async () => { releaseSave(); await tick() })
+  assert.equal(window.location.hash, '#/profile/edit')
+  assert.equal(field('major').value, 'Business')
+  holdSave = false; await click('Save Changes')
+  await waitFor(() => window.location.hash === '#/profile')
+  assert.equal(state.profile.major, 'Business')
+})
 
 test('signup, edit, reload, logout and login keep the account identity through Express', async () => {
   await mount()

@@ -141,7 +141,9 @@ Users can correct their entries and retry Create Account, or use the existing Lo
 
 Collects the info CareerHive uses to recommend jobs and calculate AI match scores: major, graduation date, skills, the type of roles they want, preferred locations, and work authorization.
 
-- Typing a skill or location and pressing enter adds it as a tag below the field. Tapping a tag removes it.
+For the current demo (#150), Setup and Edit Profile share major, May/December graduation-term, and work-authorization dropdowns. Preferred locations can add one or more U.S. states; free-text additions are disabled. Existing saved values are preserved, and location tags can be removed.
+
+- Typing a skill and pressing Enter adds a skill tag. Selecting a state adds a location tag. Tapping a tag removes it.
 - The work authorization answer is used to point out jobs that offer visa sponsorship, which matters a lot for international students.
 - "Skip for now" takes the user to Home. Personalized recommendations and match analysis require a saved major, graduation date, work authorization and at least one skill; **Complete profile** opens Edit Profile when information is missing. This clarifies the existing frontend behavior retained by the Sprint 2 match migration (#125).
 
