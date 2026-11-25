@@ -1,6 +1,7 @@
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { formatJobDate } from '../jobs/formatters.js'
+import './Tracker.css'
 
 const stages = [
   "Saved",
@@ -48,13 +49,35 @@ function ApplicationDetails({
   const noteChanged = draftNote !== savedNote
 
   const [actionError, setActionError] = useState('')
-  const [confirmingRemove, setConfirmingRemove] = useState(false)
+  const [dialog, setDialog] = useState(null)
+  const dialogRef = useRef(null)
+  const writing = useRef(false)
+  const [pending, setPending] = useState(false)
 
-  async function runAction(action) {
+  useEffect(() => {
+    if (!dialog) return
+    const modal = dialogRef.current
+    const trigger = document.activeElement
+    const overflow = document.body.style.overflow
+    modal.showModal()
+    document.body.style.overflow = 'hidden'
+    return () => {
+      modal.close()
+      document.body.style.overflow = overflow
+      const target = trigger?.isConnected && trigger !== document.body ? trigger : document.querySelector('main h1[tabindex="-1"]')
+      target?.focus({ preventScroll: true })
+    }
+  }, [dialog])
+
+  async function runAction(action, close = false) {
+    if (writing.current) return false
+    writing.current = true
+    setPending(true)
     setActionError('')
 
     try {
       await action()
+      if (close) setDialog(null)
       return true
     } catch (error) {
       setActionError(
@@ -63,19 +86,23 @@ function ApplicationDetails({
           : 'Unable to update application.'
       )
       return false
+    } finally {
+      writing.current = false
+      setPending(false)
     }
   }
 
   async function handleUpdateStage() {
     if (!stageChanged) return
 
-    await runAction(() => onStageChange(draftStage))
+    await runAction(() => onStageChange(draftStage), true)
   }
 
   function handleCancelStage() {
-
-  setDraftStage(application.stage)
-  
+    if (writing.current) return
+    setDraftStage(application.stage)
+    setActionError('')
+    setDialog(null)
   }
 
   async function handleSaveNote() {
@@ -83,14 +110,7 @@ function ApplicationDetails({
   }
 
   async function handleClearNote() {
-    const previousNote = draftNote
-    setDraftNote('')
-
-    const saved = await runAction(() => onNoteSave(''))
-
-    if (!saved) {
-      setDraftNote(previousNote)
-    }
+    if (await runAction(() => onNoteSave(''))) setDraftNote('')
   }
 
   async function handleRemove() {
@@ -99,60 +119,26 @@ function ApplicationDetails({
   }
 
   return (
-    <main className="app">
-      <button onClick={onBack}>
+    <section className="application-details">
+      <button className="ui-button ui-button-secondary" disabled={pending} onClick={onBack}>
         Back to Tracker
       </button>
 
       <h1>Application Details</h1>
-      {actionError ? <p role="alert">{actionError}</p> : null}
+      {actionError && !dialog ? <p role="alert">{actionError}</p> : null}
 
       <h2>{job?.title || "Unknown job"}</h2>
       <p>{job?.company || "Unknown company"}</p>
-      <a href={`#/jobs/${encodeURIComponent(application.jobId)}`}>
+      <a href={`#/jobs/${encodeURIComponent(application.jobId)}`}
+        onClick={() => window.history.replaceState(null, '', '#/tracker?application=' + encodeURIComponent(application.id))}>
         View job listing
       </a>
       <section>
         <h3>Current Stage</h3>
-
-        <label htmlFor="application-stage">
-          Application Stage
-        </label>
-
-        <select
-          id="application-stage"
-          value={draftStage}
-          onChange={(event) =>
-            setDraftStage(event.target.value)
-          }
-        >
-          {stages.map((stage) => (
-            <option
-              key={stage}
-              value={stage}
-            >
-              {stage}
-            </option>
-          ))}
-        </select>
-
-        <div>
-          <button
-            type="button"
-            onClick={handleUpdateStage}
-            disabled={!stageChanged}
-          >
-            Update
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCancelStage}
-            disabled={!stageChanged}
-          >
-            Cancel
-          </button>
-        </div>
+        <p>{application.stage}</p>
+        <button className="ui-button ui-button-secondary" disabled={pending} onClick={() => {
+          setDraftStage(application.stage); setActionError(''); setDialog('stage')
+        }}>Update Stage</button>
       </section>
 
       <section>
@@ -182,6 +168,10 @@ function ApplicationDetails({
         <h3>Notes</h3>
 
         <textarea
+          id="application-note"
+          aria-label="Application notes"
+          className="ui-field"
+          disabled={pending}
           value={draftNote}
           onChange={(event) =>
             setDraftNote(event.target.value)
@@ -190,18 +180,20 @@ function ApplicationDetails({
           placeholder="Add notes about this application"
         />
 
-        <div>
+        <div className="application-actions">
           <button
+            className="ui-button"
             onClick={handleSaveNote}
-            disabled={!noteChanged}
+            disabled={pending || !noteChanged}
           >
             Save Note
           </button>
 
           <button
+            className="ui-button ui-button-secondary"
             onClick={handleClearNote}
             disabled={
-              draftNote === "" && savedNote === ""
+              pending || (draftNote === "" && savedNote === "")
             }
           >
             Clear Note
@@ -216,33 +208,34 @@ function ApplicationDetails({
           Removing this application will remove it from your Tracker.
         </p>
 
-                {confirmingRemove ? (
-          <div role="alertdialog" aria-labelledby="remove-confirm-text">
-            <p id="remove-confirm-text">
-              Remove this application from your Tracker?
-            </p>
-
-            <button type="button" onClick={handleRemove}>
-              Yes, remove
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setConfirmingRemove(false)}
-            >
-              Cancel
+        <button className="ui-button ui-button-secondary" disabled={pending} onClick={() => {
+          setActionError(''); setDialog('remove')
+        }}>Remove Application</button>
+      </section>
+      {dialog && (
+        <dialog className="application-dialog" ref={dialogRef} aria-labelledby="application-dialog-title"
+          onCancel={event => { event.preventDefault(); handleCancelStage() }}>
+          <h2 id="application-dialog-title">{dialog === 'stage' ? 'Update Stage' : 'Remove Application'}</h2>
+          {dialog === 'stage' ? (
+            <>
+              <label htmlFor="application-stage">Application Stage</label>
+              <select id="application-stage" className="ui-field" value={draftStage} disabled={pending}
+                onChange={event => setDraftStage(event.target.value)}>
+                {stages.map(stage => <option key={stage} value={stage}>{stage}</option>)}
+              </select>
+            </>
+          ) : <p>Remove this application and its notes from your Tracker? This cannot be undone.</p>}
+          {actionError && <p role="alert">{actionError}</p>}
+          <div className="application-actions">
+            <button className="ui-button ui-button-secondary" disabled={pending} onClick={handleCancelStage}>Cancel</button>
+            <button className="ui-button" disabled={pending || (dialog === 'stage' && !stageChanged)}
+              onClick={dialog === 'stage' ? handleUpdateStage : handleRemove}>
+              {dialog === 'stage' ? (pending ? 'Updating…' : 'Update') : (pending ? 'Removing…' : 'Yes, remove')}
             </button>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmingRemove(true)}
-          >
-            Remove Application
-          </button>
-        )}
-      </section>
-    </main>
+        </dialog>
+      )}
+    </section>
   )
 }
 

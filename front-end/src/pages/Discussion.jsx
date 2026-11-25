@@ -31,6 +31,7 @@ export default function Discussion({ jobId }) {
   const [body, setBody] = useState('')
   const [anonymous, setAnonymous] = useState(false)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     getJob(jobId).then(setJob, () => setJob(null))
@@ -47,14 +48,23 @@ export default function Discussion({ jobId }) {
     setError('')
   }
 
-  function handlePost() {
+  async function handlePost() {
+    if (submitting) return
     if (!body.trim()) {
       setError('Please write something before posting.')
       return
     }
-    appState.addPost(jobId, { topic: newTopic, body: body.trim(), anonymous, author: appState.profile?.name })
-    setTopic('All')
-    closeForm()
+    setSubmitting(true)
+    setError('')
+    try {
+      await appState.addPost(jobId, { topic: newTopic, body: body.trim(), anonymous })
+      setTopic('All')
+      closeForm()
+    } catch (problem) {
+      setError(problem.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -80,24 +90,24 @@ export default function Discussion({ jobId }) {
           <h2 id="new-post-title">New Post</h2>
 
           <label htmlFor="new-post-topic">Topic</label>
-          <select id="new-post-topic" className="ui-field" value={newTopic} onChange={(event) => setNewTopic(event.target.value)}>
+          <select id="new-post-topic" className="ui-field" value={newTopic} disabled={submitting} onChange={(event) => setNewTopic(event.target.value)}>
             {TOPICS.map((name) => <option key={name}>{name}</option>)}
           </select>
 
           <label htmlFor="new-post-body">Your post</label>
-          <textarea id="new-post-body" className="ui-field" rows={4} value={body}
+          <textarea id="new-post-body" className="ui-field" rows={4} value={body} disabled={submitting}
             placeholder="Share interview timelines, assessments, or sponsorship info..."
             onChange={(event) => { setBody(event.target.value); setError('') }} />
           {error && <p className="discussion-error" role="alert">{error}</p>}
 
           <label>
-            <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} />
+            <input type="checkbox" checked={anonymous} disabled={submitting} onChange={(event) => setAnonymous(event.target.checked)} />
             {' '}Post anonymously
           </label>
 
           <div className="discussion-actions">
-            <button type="button" className="ui-button ui-button-secondary" onClick={closeForm}>Cancel</button>
-            <button type="button" className="ui-button" onClick={handlePost}>Post</button>
+            <button type="button" className="ui-button ui-button-secondary" disabled={submitting} onClick={closeForm}>Cancel</button>
+            <button type="button" className="ui-button" disabled={submitting} onClick={handlePost}>{submitting ? 'Posting…' : 'Post'}</button>
           </div>
         </section>
       )}

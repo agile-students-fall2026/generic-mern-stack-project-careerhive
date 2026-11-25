@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { useAppState } from "../data/useAppState.js"
 import { getJobs } from "../jobs/api.js"
 import ApplicationDetails from "./ApplicationDetails"
+import './Tracker.css'
 
 const stages = [
   "Saved",
@@ -96,7 +97,7 @@ function StageSection({
     stageApplications.length - 2
 
   return (
-    <section>
+    <section className="tracker-stage">
       <h3>
         {stage} ({stageApplications.length})
       </h3>
@@ -115,7 +116,7 @@ function StageSection({
           ]
 
         return (
-          <div key={application.id}>
+          <article className="tracker-card" key={application.id}>
             <h4>{job.title}</h4>
 
             <p>{job.company}</p>
@@ -148,7 +149,7 @@ function StageSection({
             >
               View Details
             </button>
-          </div>
+          </article>
         )
       })}
 
@@ -269,7 +270,7 @@ function Tracker({ initialStage, initialApplicationId }) {
         application={selectedApplication}
         job={selectedJob}
         onBack={() =>
-          setSelectedApplicationId(null)
+          initialApplicationId ? (window.location.hash = '#/tracker') : setSelectedApplicationId(null)
         }
         onStageChange={(newStage) =>
           appState.updateApplication(
@@ -293,17 +294,18 @@ function Tracker({ initialStage, initialApplicationId }) {
 
   return (
     <section className="tracker">
-      <h1>My Tracker</h1>
+      <h1 tabIndex={-1}>My Tracker</h1>
 
       <p>
         Total applications:{" "}
         {applications.length}
       </p>
 
-      <div>
+      <div className="tracker-controls">
         <label>
           Stage:
           <select
+            className="ui-field"
             value={selectedStage}
             onChange={(event) =>
               setSelectedStage(
@@ -329,6 +331,7 @@ function Tracker({ initialStage, initialApplicationId }) {
         <label>
           Sort:
           <select
+            className="ui-field"
             value={sortBy}
             onChange={(event) =>
               setSortBy(
@@ -350,6 +353,10 @@ function Tracker({ initialStage, initialApplicationId }) {
           </select>
         </label>
       </div>
+
+      {!applications.some(application => selectedStage === 'All' || application.stage === selectedStage) && (
+        <p role="status">{applications.length ? 'No applications in this stage.' : 'No tracked applications yet. Save a job to get started.'}</p>
+      )}
 
       {stages
         .filter(

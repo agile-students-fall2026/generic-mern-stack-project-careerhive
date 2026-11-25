@@ -78,30 +78,37 @@ app.use('/api/jobs', (req, res) => {
 
 
 
- // Issue #128: Serve discussion fixtures through Express
-app.use('/api/discussions', (req, res) => {
+app.use('/api/discussions', express.json(), (req, res) => {
   res.set('Cache-Control', 'no-store')
-
-  if (req.method !== 'GET') {
-    return res.set('Allow', 'GET')
-      .status(405)
-      .json({ error: 'Method not allowed' })
+  const collection = req.originalUrl.split('?')[0] === '/api/discussions'
+  if (req.method !== 'GET' && (collection || req.method !== 'POST')) {
+    return res.set('Allow', collection ? 'GET' : 'GET, POST').status(405).json({ error: 'Method not allowed' })
   }
-
-  if (req.originalUrl.split('?')[0] === '/api/discussions') {
-    return res.json(discussions)
-  }
-
   let jobId
   try {
-    jobId = decodeURIComponent(req.path.slice(1))
+    if (!collection) jobId = decodeURIComponent(req.path.slice(1))
   } catch {
     return res.status(400).json({ error: 'Invalid job identifier' })
   }
-
-  return res.json(
-    discussions.filter(item => item.jobId === jobId)
-  )
+  if (req.method === 'GET') {
+    return res.json(discussions.filter(item => collection || item.jobId === jobId)
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)))
+  }
+  if (!req.account) return res.status(401).json({ error: 'Please sign in to post.' })
+  if (!jobs.some(job => job.id === jobId)) return res.status(404).json({ error: 'Job not found' })
+  const { topic, body, anonymous = false } = req.body ?? {}
+  if (!['Interview', 'Assessment', 'Sponsorship', 'Update'].includes(topic)
+    || typeof body !== 'string' || !body.trim() || typeof anonymous !== 'boolean') {
+    return res.status(400).json({ error: 'Choose a topic and write a post.' })
+  }
+  // shortcut: demo posts live until Express restarts; Sprint 3 adds MongoDB persistence.
+  const post = { id: 'post-' + randomUUID(), jobId, topic, body: body.trim(), anonymous,
+    author: anonymous ? 'Anonymous' : req.account.profile.name, createdAt: new Date().toISOString() }
+  discussions.unshift(post)
+  return res.status(201).json(post)
+}, (error, req, res, next) => {
+  if (error.type !== 'entity.parse.failed' && error.type !== 'entity.too.large') return next(error)
+  res.status(error.status).json({ error: 'Invalid discussion post.' })
 })
 
 

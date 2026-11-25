@@ -30,9 +30,9 @@ Tests use Node's built-in runner, React/Vite, and the development-only jsdom dep
 
 Express serves `back-end/data/jobs.json` through read-only `GET /api/jobs` and `GET /api/jobs/:id`. Responses retain the listing array, selected-job record and JSON errors used by `src/jobs/api.js`. The nine fictional internship/entry-level records use seeded Picsum images and reserved example.com links. No API keys or live AI are required.
 
-Vite dev and preview proxy job and match requests to Express at `http://localhost:3000`; neither is intercepted by Vite mocks. Keep Express running for both. The separate `appMockApi` remains only for discussion reads; account, profile, roles and tracker requests also reach Express. Existing fixture files remain until their consumers migrate; #128 owns final mock removal.
+Vite dev forwards all `/api` requests to Express at `http://localhost:3000`; no Vite mock intercepts them. Collection `GET /api/discussions` supports startup; job-specific GET returns newest-first posts. Signed-in `POST /api/discussions/:jobId` validates topic/body/anonymity, sets author/ID/time on the server, and returns the created post. Failed posts keep the form draft. Posts remain in Express memory until restart; MongoDB persistence is Sprint 3 work.
 
-The build contains the client app. Express serves `dist/` and job APIs, but the complete built UI still needs the other backend routes, including shared startup data (#130). Static hosting needs a compatible API.
+The build contains the client app. Express serves `dist/` and the application APIs; static-only hosting needs a compatible API. Full user-journey acceptance remains tracked in #130. Use the Vite dev server or built Express app; preview has no separate API proxy configured.
 
 `src/jobs/api.js` owns requests, validation, and record identity checks. `src/jobs/routes.js` owns the two native hash routes. These are scoped implementations for #60/#65, ready to adapt to the agreed shared data (#44/#46) and main routing/layout (#49); those broader teammate tasks are not completed by this change. No profile, tracker, discussion, or global state contract is asserted here.
 
@@ -102,4 +102,4 @@ Publication verification on November 3, 2026: the pulled master baseline passed 
 
 ## Shared session data
 
-Express serves account/profile/application reads and writes; they survive a page reload while that server remains running. The Vite app mock still serves discussion reads, and new discussion posts remain in React state. Required startup-resource failures display an error instead of a partial profile. Home and Job Details use the Express match POST contract above; no API keys or live model are required. Full Express-only startup still depends on the other route migrations.
+Express serves account/profile/application and discussion reads/writes; they survive page reloads while that server remains running. Required startup-resource failures display an error instead of a partial profile. Home and Job Details use the Express match POST contract above; no API keys or live model are required.

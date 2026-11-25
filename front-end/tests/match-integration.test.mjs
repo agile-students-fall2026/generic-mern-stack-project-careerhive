@@ -16,7 +16,7 @@ const jobs = fixture('jobs')
 const originalFetch = globalThis.fetch
 let server, dom, root, App, AppState, useAppState, currentState
 let requests, matchHandler, profileHandler
-let applicationStore, profileStore, applicationCounter
+let applicationStore, profileStore, applicationCounter, postStore
 const response = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
 function match(jobId, saved = profile, changes = {}) {
@@ -125,7 +125,14 @@ function serve(url, options = {}) {
   if (path === '/api/applications' || path.startsWith('/api/applications/')) {
     return mockApplication(path, options)
   }
-  if (path === '/api/discussions') return Promise.resolve(response(posts))
+  if (path === '/api/discussions') return Promise.resolve(response(postStore))
+  if (path.startsWith('/api/discussions/') && options.method === 'POST') {
+    const post = { ...JSON.parse(options.body), id: 'test-post-' + crypto.randomUUID(),
+      jobId: decodeURIComponent(path.slice('/api/discussions/'.length)), author: profileStore.name,
+      createdAt: new Date().toISOString() }
+    postStore.unshift(post)
+    return Promise.resolve(response(post, 201))
+  }
   if (path === '/api/jobs') return Promise.resolve(response(jobs))
   if (path.startsWith('/api/jobs/')) return Promise.resolve(response(jobs.find(job => path === `/api/jobs/${job.id}`) ?? null))
   if (path.startsWith('/api/matches/')) {
@@ -152,6 +159,7 @@ beforeEach(async () => {
   dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
   requests = []
   applicationStore = structuredClone(applications)
+  postStore = structuredClone(posts)
   profileStore = structuredClone(profile)
   applicationCounter = 0
 
@@ -198,6 +206,104 @@ async function type(element, value, key) {
 }
 const detailRoute = index => `/jobs/${encodeURIComponent(jobs[index].id)}`
 const contains = text => document.body.textContent.includes(text)
+
+test('Tracker keeps two previews per stage, expands real records and explains an empty filter', async () => {
+  applicationStore = jobs.slice(0, 4).map((job, index) => ({ ...applications[0], id: 'preview-' + index, jobId: job.id, stage: 'Saved' }))
+  await mount('/tracker')
+  await waitFor(() => Boolean(button('View Details')))
+  const saved = [...document.querySelectorAll('.tracker > section')].find(section => section.querySelector('h3')?.textContent.includes('Saved'))
+  const total = applicationStore.length
+  assert.equal(saved.querySelectorAll('h4').length, Math.min(2, total))
+  if (total > 2) {
+    await click([...saved.querySelectorAll('button')].find(item => item.textContent.includes('more')))
+    assert.equal(saved.querySelectorAll('h4').length, total)
+    await click(button('Show less'))
+    assert.equal(saved.querySelectorAll('h4').length, 2)
+  }
+  await act(async () => {
+    document.querySelector('select').value = 'Offer'
+    document.querySelector('select').dispatchEvent(new window.Event('change', { bubbles: true }))
+  })
+  assert.ok(contains('No applications in this stage.'))
+})
+
+test('stage dialog cancels safely, retains a failed choice and prevents duplicate writes', async () => {
+  const saved = applications[0]
+  await mount('/tracker?application=' + saved.id)
+  await waitFor(() => contains('Application Details'))
+  assert.equal(Boolean(document.querySelector('main main')), false)
+  const trigger = button('Update Stage')
+  assert.ok(trigger); trigger.focus()
+  await click(trigger)
+  assert.ok(document.querySelector('dialog[open]'))
+  assert.equal(document.querySelector('#application-stage').multiple, false)
+  await act(async () => {
+    document.querySelector('#application-stage').value = 'Offer'
+    document.querySelector('#application-stage').dispatchEvent(new window.Event('change', { bubbles: true }))
+  })
+  await click(button('Cancel'))
+  assert.equal(currentState.applications[0].stage, saved.stage)
+  assert.equal(document.activeElement, trigger)
+  assert.equal(document.body.style.overflow, '')
+  await click(trigger)
+  assert.equal(document.querySelector('#application-stage').value, saved.stage)
+  await act(async () => {
+    document.querySelector('#application-stage').value = 'Offer'
+    document.querySelector('#application-stage').dispatchEvent(new window.Event('change', { bubbles: true }))
+  })
+  const send = globalThis.fetch, pending = deferred()
+  let writes = 0
+  globalThis.fetch = (url, options = {}) => {
+    if (String(url).endsWith('/' + saved.id) && options.method === 'POST') { writes++; return pending.promise }
+    return send(url, options)
+  }
+  await click(button('Update'))
+  assert.equal(button('Updating…').disabled, true)
+  assert.equal(writes, 1)
+  await act(async () => pending.resolve(response({ error: 'Stage unavailable' }, 503)))
+  await waitFor(() => contains('Stage unavailable'))
+  assert.equal(document.querySelector('#application-stage').value, 'Offer')
+  assert.equal(currentState.applications[0].stage, saved.stage)
+  globalThis.fetch = send
+  await click(button('Update'))
+  await waitFor(() => !document.querySelector('dialog'))
+  assert.equal(currentState.applications[0].stage, 'Offer')
+  assert.equal(currentState.applications[0].history.length, saved.history.length + 1)
+})
+
+test('note failures retain drafts and removal requires a cancellable modal confirmation', async () => {
+  const saved = applications[0]
+  await mount('/tracker?application=' + saved.id)
+  await waitFor(() => contains('Application Details'))
+  const note = document.querySelector('textarea')
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(note, 'Keep my draft')
+    note.dispatchEvent(new window.Event('input', { bubbles: true }))
+  })
+  const send = globalThis.fetch
+  globalThis.fetch = (url, options = {}) => options.method === 'POST' && String(url).endsWith('/' + saved.id)
+    ? Promise.resolve(response({ error: 'Note unavailable' }, 503)) : send(url, options)
+  await click(button('Save Note'))
+  await waitFor(() => contains('Note unavailable'))
+  assert.equal(note.value, 'Keep my draft')
+  assert.equal(currentState.applications[0].note, saved.note)
+  globalThis.fetch = send
+  await click(button('Save Note'))
+  assert.equal(currentState.applications[0].note, 'Keep my draft')
+  await click(button('Clear Note'))
+  assert.equal(currentState.applications[0].note, '')
+  await click(button('Remove Application'))
+  const dialog = document.querySelector('dialog[open]')
+  assert.ok(dialog)
+  await act(async () => dialog.dispatchEvent(new window.Event('cancel', { cancelable: true })))
+  assert.ok(currentState.applications.some(item => item.id === saved.id))
+  await click(button('Remove Application'))
+  await click(button('Yes, remove'))
+  await waitFor(() => contains('My Tracker'))
+  assert.ok(!currentState.applications.some(item => item.id === saved.id))
+  assert.equal(document.activeElement === document.querySelector('.tracker h1'), true,
+    `Expected Tracker heading focus, got ${document.activeElement.tagName}; heading present: ${Boolean(document.querySelector('.tracker h1'))}`)
+})
 
 test('deadline tabs exclude yesterday, retain today, and respect week/month boundaries', async (context) => {
   context.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-19T16:00:00Z') })
@@ -394,7 +500,7 @@ test('missing startup profile shows the load error instead of an endless profile
   assert.ok(!contains('Loading profile'))
 })
 
-test('logout restores saved session records and clears Browse controls without a reload', async () => {
+test('logout keeps server records and clears Browse controls without a reload', async () => {
   await mount('/jobs')
   await waitFor(() => currentState.status === 'ready' && Boolean(document.querySelector('input[type="search"]')))
   await act(async () => {
@@ -408,13 +514,13 @@ test('logout restores saved session records and clears Browse controls without a
       { note: 'Edited note' }
     )
 
-    currentState.addPost(jobs[0].id, {
+    const postSave = currentState.addPost(jobs[0].id, {
       topic: 'Interview',
       body: 'Session post',
       anonymous: true,
     })
 
-    await Promise.all([profileSave, applicationSave])
+    await Promise.all([profileSave, applicationSave, postSave])
   })
   await type(document.querySelector('input[type="search"]'), 'Brightspace')
   await click(button('Menu'))
@@ -429,7 +535,7 @@ test('logout restores saved session records and clears Browse controls without a
     ).note,
     'Edited note'
   )
-  assert.deepEqual(currentState.posts, posts)
+  assert.deepEqual(currentState.posts, postStore)
   await navigate('/jobs')
   await waitFor(() => Boolean(document.querySelector('input[type="search"]')))
   assert.equal(document.querySelector('input[type="search"]').value, '')
@@ -457,14 +563,14 @@ test('queued shared updates preserve earlier application changes and distinct po
       applications[0].id, { note: 'Keep the new stage' }
     )
 
-    currentState.addPost(jobs[0].id, {
+    const firstPost = currentState.addPost(jobs[0].id, {
       topic: 'Interview', body: 'First post', anonymous: false,
     })
-    currentState.addPost(jobs[0].id, {
+    const secondPost = currentState.addPost(jobs[0].id, {
       topic: 'Interview', body: 'Second post', anonymous: false,
     })
 
-    await Promise.all([stageWrite, noteWrite])
+    await Promise.all([stageWrite, noteWrite, firstPost, secondPost])
   })
   const updated = currentState.applications.find(item => item.id === applications[0].id)
   assert.equal(updated.stage, 'Applied')
@@ -599,7 +705,9 @@ test('a saved listing shows its current stage and opens the matching application
   await waitFor(() => contains('Application Details'))
   assert.ok(contains(jobs[0].title))
   assert.equal(document.querySelector('textarea').value, saved.note)
+  await click(button('Update Stage'))
   assert.equal(document.querySelector('#application-stage').value, saved.stage)
+  await click(button('Cancel'))
   await act(async () => currentState.updateApplication(saved.id, { stage: 'Offer' }))
   await navigate(detailRoute(0))
   await waitFor(() => Boolean(trackerLink()))
@@ -636,7 +744,9 @@ test('saving a new listing links directly to its application with the selected s
   await click(trackerLink)
   await waitFor(() => contains('Application Details'))
   assert.ok(contains(job.title))
+  await click(button('Update Stage'))
   assert.equal(document.querySelector('#application-stage').value, 'Preparing')
+  await click(button('Cancel'))
   assert.equal(document.querySelector('textarea').value, 'Review the portfolio requirements.')
   await click(button('Back to Tracker'))
   await waitFor(() => contains('My Tracker'))
