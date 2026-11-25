@@ -672,6 +672,7 @@ test('failed Tracker removal keeps the application and shows an error', async ()
     .find(item => /remove/i.test(item.textContent))
 
   await click(removeButton)
+  await click(button('Yes, remove'))
   await waitFor(() => contains('Test deletion failed'))
 
   assert.ok(contains('Application Details'))
@@ -779,8 +780,9 @@ for (const { route, selector } of [
 
       const removeButton = [...document.querySelectorAll('button')]
         .find(item => /remove/i.test(item.textContent))
-
+       
       await click(removeButton)
+      await click(button('Yes, remove'))
       await waitFor(() => contains('Test deletion failed'))
 
       // A failed DELETE must not close Details or remove the record.
