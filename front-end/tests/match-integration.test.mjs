@@ -107,6 +107,7 @@ function mockApplication(path, options = {}) {
 
 function serve(url, options = {}) {
   const path = String(url)
+  if (path === '/api/roles') return Promise.resolve(response(fixture('roles')))
   if (path === '/api/logout') return Promise.resolve(response({ ok: true, profile: signedOutProfile }))
   if (path === '/api/profile') {
     if (options.method === 'POST') {
@@ -506,7 +507,7 @@ const roleInput = role => Array.from(document.querySelectorAll('label'))
 
 test('preferred role changes stay in the profile draft and Cancel preserves saved roles', async () => {
   await mount('/profile/edit')
-  await waitFor(() => Boolean(document.querySelector('input[name="name"]')))
+  await waitFor(() => Boolean(roleInput('Internships')))
   assert.ok(roleInput('Internships'), 'Expected internship preference checkbox')
   assert.equal(roleInput('Internships').checked, true)
   assert.equal(roleInput('Full-time entry-level roles').checked, false)
@@ -523,7 +524,7 @@ test('preferred role changes stay in the profile draft and Cancel preserves save
 
 test('saved role selections reopen correctly and can be cleared without changing other preferences', async () => {
   await mount('/profile/edit')
-  await waitFor(() => Boolean(document.querySelector('input[name="name"]')))
+  await waitFor(() => Boolean(roleInput('Full-time entry-level roles')))
   assert.ok(roleInput('Full-time entry-level roles'), 'Expected entry-level preference checkbox')
   await click(roleInput('Full-time entry-level roles'))
   await click(button('Save Changes'))
@@ -532,7 +533,7 @@ test('saved role selections reopen correctly and can be cleared without changing
   assert.deepEqual(currentState.profile.skills, profile.skills)
   assert.deepEqual(currentState.profile.locations, profile.locations)
   await navigate('/profile/edit')
-  await waitFor(() => Boolean(document.querySelector('input[name="name"]')))
+  await waitFor(() => Boolean(roleInput('Internships')))
   assert.equal(roleInput('Internships').checked, true)
   assert.equal(roleInput('Full-time entry-level roles').checked, true)
   await click(roleInput('Internships'))

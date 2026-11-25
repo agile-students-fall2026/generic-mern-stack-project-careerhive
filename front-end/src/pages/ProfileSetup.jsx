@@ -1,14 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppState } from '../data/useAppState.js'
 import { getRoles } from '../data/api.js'
 import './EditProfile.css'
 import './ProfileSetup.css'
-
-const workChoices = [
-    'F-1 student (will need sponsorship)',
-    'U.S. citizen or permanent resident',
-    'Already authorized to work in the U.S.',
-]
+import ProfileSelect from '../components/ProfileSelect.jsx'
+import { majorChoices, graduationChoices, workChoices, stateChoices } from '../data/profileChoices.js'
 
 function ProfileSetup() {
     const appState = useAppState()
@@ -18,12 +14,13 @@ function ProfileSetup() {
 }
 
 function ProfileSetupForm({ profile, onSave }) {
+    const formRef = useRef(null)
     const [draft, setDraft] = useState(() => ({ ...profile }))
     const [skillInput, setSkillInput] = useState('')
-    const [locationInput, setLocationInput] = useState('')
     const [roles, setRoles] = useState([])
     const [rolesError, setRolesError] = useState('')
     const [saveError, setSaveError] = useState('')
+    const [saving, setSaving] = useState(false)
 
     useEffect(() => {
         let active = true
@@ -55,12 +52,9 @@ function ProfileSetupForm({ profile, onSave }) {
     }
 
     function addLocation(event) {
-        if (event.key !== 'Enter') return
-        event.preventDefault()
-        const location = locationInput.trim()
-        if (location === '' || draft.locations.includes(location)) return
+        const location = event.target.value
+        if (!stateChoices.some(choice => choice.value === location) || draft.locations.includes(location)) return
         setDraft({ ...draft, locations: draft.locations.concat(location) })
-        setLocationInput('')
     }
 
     function removeLocation(location) {
@@ -75,12 +69,16 @@ function ProfileSetupForm({ profile, onSave }) {
     }
 
     async function saveAndContinue() {
+        if (saving) return
+        setSaving(true)
         setSaveError('')
         try {
             await onSave(draft)
-            window.location.hash = '#/home'
+            if (formRef.current) window.location.hash = '#/home'
         } catch (problem) {
             setSaveError(problem.message)
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -88,23 +86,14 @@ function ProfileSetupForm({ profile, onSave }) {
         window.location.hash = '#/home'
     }
 
-    const authorizationChoices = workChoices.includes(draft.workAuthorization) || draft.workAuthorization === ''
-        ? workChoices
-        : workChoices.concat(draft.workAuthorization)
-
     return (
-        <section className="auth profile-setup">
+        <section className="auth profile-setup" ref={formRef}>
             <h1>Set Up Your Profile</h1>
             <p className="auth-lead">This helps us match you with the right roles.</p>
 
-            <label>
-                Major
-                <input className="ui-field" name="major" value={draft.major} onChange={changeField} />
-            </label>
-            <label>
-                Graduation date
-                <input className="ui-field" type="date" name="graduationDate" value={draft.graduationDate} onChange={changeField} />
-            </label>
+            <fieldset className="profile-fields" disabled={saving}>
+            <ProfileSelect label="Major" name="major" value={draft.major} onChange={changeField} options={majorChoices} />
+            <ProfileSelect label="Graduation date" name="graduationDate" value={draft.graduationDate} onChange={changeField} options={graduationChoices} />
 
             <label>
                 Skills
@@ -128,30 +117,22 @@ function ProfileSetupForm({ profile, onSave }) {
                 ))}
             </fieldset>
 
-            <label>
-                Preferred locations
-                <input className="ui-field" value={locationInput} onChange={(event) => setLocationInput(event.target.value)} onKeyDown={addLocation} />
-            </label>
-            <p className="edit-hint">Press Enter to add one. Click a tag to remove it.</p>
+            <ProfileSelect label="Preferred locations" name="locations" value="" onChange={addLocation} options={stateChoices} />
+            <p className="edit-hint">Choose a state to add it. Click a tag to remove it.</p>
             <ul className="skill-tags">
                 {draft.locations.map((location) => (
                     <li key={location}><button type="button" onClick={() => removeLocation(location)}>{location}</button></li>
                 ))}
             </ul>
 
-            <label>
-                Work authorization
-                <select className="ui-field" name="workAuthorization" value={draft.workAuthorization} onChange={changeField}>
-                    <option value="">Select one</option>
-                    {authorizationChoices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
-                </select>
-            </label>
+            <ProfileSelect label="Work authorization" name="workAuthorization" value={draft.workAuthorization} onChange={changeField} options={workChoices} />
 
             {saveError ? <p className="auth-error" role="alert">{saveError}</p> : null}
             <div className="setup-actions">
-                <button className="ui-button" type="button" onClick={saveAndContinue}>Save and continue</button>
+                <button className="ui-button" type="button" onClick={saveAndContinue}>{saving ? 'Saving…' : 'Save and continue'}</button>
                 <button className="ui-button ui-button-secondary" type="button" onClick={skipProfile}>Skip for now</button>
             </div>
+            </fieldset>
         </section>
     )
 }

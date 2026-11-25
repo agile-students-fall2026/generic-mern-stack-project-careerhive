@@ -1,13 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppState } from '../data/useAppState.js'
 import './EditProfile.css'
 import { getRoles } from '../data/api.js'
-
-const workChoices = [
-    'F-1 student (will need sponsorship)',
-    'U.S. citizen or permanent resident',
-    'Already authorized to work in the U.S.',
-]
+import ProfileSelect from '../components/ProfileSelect.jsx'
+import { majorChoices, graduationChoices, workChoices, stateChoices } from '../data/profileChoices.js'
 
 function EditProfile() {
     const appState = useAppState()
@@ -17,14 +13,15 @@ function EditProfile() {
 }
 
 function EditProfileForm({ profile, onSave }) {
+    const formRef = useRef(null)
     const [draft, setDraft] = useState(() => ({ ...profile }))
     const [photoOpen, setPhotoOpen] = useState(false)
     const [photoChoice, setPhotoChoice] = useState('')
     const [skillInput, setSkillInput] = useState('')
-    const [locationInput, setLocationInput] = useState('')
     const [saveError, setSaveError] = useState('')
     const [roles, setRoles] = useState([])
     const [rolesError, setRolesError] = useState('')
+    const [saving, setSaving] = useState(false)
 
     useEffect(() => {
         let active = true
@@ -57,19 +54,12 @@ function EditProfileForm({ profile, onSave }) {
     function removeSkill(skill) {
         setDraft({ ...draft, skills: draft.skills.filter((item) => item !== skill) })
     }
-    function changeLocationInput(event) {
-        setLocationInput(event.target.value)
-    }
-
     function addLocation(event) {
-        if (event.key !== 'Enter') return
-        event.preventDefault()
-        const location = locationInput.trim()
-        if (location === '') return
+        const location = event.target.value
+        if (!stateChoices.some(choice => choice.value === location)) return
         if (!draft.locations.includes(location)) {
             setDraft({ ...draft, locations: draft.locations.concat(location) })
         }
-        setLocationInput('')
     }
 
     function removeLocation(location) {
@@ -109,26 +99,28 @@ function EditProfileForm({ profile, onSave }) {
     }
 
     async function saveEdit() {
+        if (saving) return
+        setSaving(true)
         setSaveError('')
         try {
             await onSave(draft)
-            window.location.hash = '#/profile'
+            if (formRef.current) window.location.hash = '#/profile'
         } catch (problem) {
             setSaveError(problem.message)
+        } finally {
+            setSaving(false)
         }
     }
 
     function cancelEdit() {
         window.location.hash = '#/profile'
     }
-    const authorizationChoices = workChoices.includes(draft.workAuthorization) || draft.workAuthorization === ''
-        ? workChoices
-        : workChoices.concat(draft.workAuthorization)
 
     return (
-        <section className="edit-profile">
+        <section className="edit-profile" ref={formRef}>
             <a className="ui-button ui-button-secondary profile-back" href="#/profile">Back to profile</a>
             <h1>Edit Profile</h1>
+            <fieldset className="profile-fields" disabled={saving}>
             <div className="edit-photo">
                 {draft.photo && <img src={draft.photo} alt="" width="72" height="72" />}
                 <button type="button" className="ui-button ui-button-secondary" onClick={openPhoto}>Change photo</button>
@@ -140,21 +132,9 @@ function EditProfileForm({ profile, onSave }) {
                     Full name
                     <input className="ui-field" name="name" value={draft.name} onChange={changeField} />
                 </label>
-                <label>
-                    Major
-                    <input className="ui-field" name="major" value={draft.major} onChange={changeField} />
-                </label>
-                <label>
-                    Graduation date
-                    <input className="ui-field" type="date" name="graduationDate" value={draft.graduationDate} onChange={changeField} />
-                </label>
-                <label>
-                    Work authorization
-                    <select className="ui-field" name="workAuthorization" value={draft.workAuthorization} onChange={changeField}>
-                        <option value="">Select one</option>
-                        {authorizationChoices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
-                    </select>
-                </label>
+                <ProfileSelect label="Major" name="major" value={draft.major} onChange={changeField} options={majorChoices} />
+                <ProfileSelect label="Graduation date" name="graduationDate" value={draft.graduationDate} onChange={changeField} options={graduationChoices} />
+                <ProfileSelect label="Work authorization" name="workAuthorization" value={draft.workAuthorization} onChange={changeField} options={workChoices} />
             </section>
     
             <section className="edit-card">
@@ -175,11 +155,8 @@ function EditProfileForm({ profile, onSave }) {
     
             <section className="edit-card">
                 <h2>Locations</h2>
-                <label>
-                    Add a location
-                    <input className="ui-field" value={locationInput} onChange={changeLocationInput} onKeyDown={addLocation} />
-                </label>
-                <p className="edit-hint">Press Enter to add one. Click a tag to remove it.</p>
+                <ProfileSelect label="Preferred locations" name="locations" value="" onChange={addLocation} options={stateChoices} />
+                <p className="edit-hint">Choose a state to add it. Click a tag to remove it.</p>
                 <ul className="skill-tags">
                     {draft.locations.map((location) => (
                         <li key={location}>
@@ -205,7 +182,7 @@ function EditProfileForm({ profile, onSave }) {
             {saveError ? <p className="edit-error" role="alert">{saveError}</p> : null}
             <div className="edit-actions">
                 <button type="button" className="ui-button ui-button-secondary" onClick={cancelEdit}>Cancel</button>
-                <button type="button" className="ui-button" onClick={saveEdit}>Save Changes</button>
+                <button type="button" className="ui-button" onClick={saveEdit}>{saving ? 'Saving…' : 'Save Changes'}</button>
             </div>
             {photoOpen && (
                 <div className="photo-dialog">
@@ -220,6 +197,7 @@ function EditProfileForm({ profile, onSave }) {
                     </div>
                 </div>
             )}
+            </fieldset>
         </section>
     )
 }

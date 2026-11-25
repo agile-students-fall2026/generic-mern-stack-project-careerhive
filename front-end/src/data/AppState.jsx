@@ -24,6 +24,7 @@ function AppState(props) {
   const applicationWriteQueues = useRef(new Map())
   const [posts, setPosts] = useState([])
   const profileVersion = useRef(0)
+  const profileSaving = useRef(false)
   const accountQueue = useRef(Promise.resolve())
 
   useEffect(() => {
@@ -51,10 +52,16 @@ function AppState(props) {
   }, [])
 
   async function saveProfile(nextProfile) {
+    if (profileSaving.current) throw new Error('Your profile is already saving. Please wait and try again.')
+    profileSaving.current = true
     const version = profileVersion.current
-    const saved = await postProfile(nextProfile)
-    if (version !== profileVersion.current) throw new Error('Your account changed. Please try again.')
-    setProfile(saved)
+    try {
+      const saved = await postProfile(nextProfile)
+      if (version !== profileVersion.current) throw new Error('Your account changed. Please try again.')
+      setProfile(saved)
+    } finally {
+      profileSaving.current = false
+    }
   }
 
   function changeAccount(action) {
