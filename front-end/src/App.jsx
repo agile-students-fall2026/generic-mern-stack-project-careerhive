@@ -12,6 +12,7 @@ import Tracker from './pages/Tracker.jsx'
 import Welcome from './pages/Welcome.jsx'
 import SignUp from './pages/SignUp.jsx'
 import LogIn from './pages/LogIn.jsx'
+import PasswordRecovery from './pages/PasswordRecovery.jsx'
 import Menu from './components/Menu.jsx'
 import { useJobMatch } from './jobs/useJobMatch.js'
 import ProfileSetup from './pages/ProfileSetup.jsx'
@@ -134,6 +135,13 @@ function App() {
     '/welcome': <Welcome />,
     '/login': <LogIn />,
     '/signup': <SignUp />,
+    '/forgot-password': <PasswordRecovery key="request" />,
+  }
+  const queryStart = path.indexOf('?')
+  const screen = queryStart === -1 ? path : path.slice(0, queryStart)
+  if (screen === '/reset-password') {
+    const token = queryStart === -1 ? null : new URLSearchParams(path.slice(queryStart + 1)).get('token')
+    return <main className="app"><PasswordRecovery key={path} reset token={token} /></main>
   }
   if (signedOutScreens[path]) {
     return <main className="app">{signedOutScreens[path]}</main>

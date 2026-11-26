@@ -20,6 +20,85 @@ describe('account profiles', () => {
   }
   const account = name => ({ name, email: name.toLowerCase() + '@example.test', password: 'demo-password' })
 
+  describe('password recovery', () => {
+    let input, link, now
+    let recoveryCase = 0
+    const readClock = Date.now
+    const request = email => send('forgot-password', { email })
+    const reset = (token, confirmPassword = 'new-password') =>
+      send('reset-password', { token, password: 'new-password', confirmPassword })
+    const tokenFromLink = () => new URLSearchParams(new URL(link).hash.split('?')[1]).get('token')
+
+    beforeEach(() => {
+      input = account('Recovery' + ++recoveryCase)
+      link = undefined
+      now = readClock()
+      Date.now = () => now
+      app.locals.passwordResetDemo = { email: input.email, origin, deliver: url => { link = url } }
+    })
+    afterEach(() => {
+      Date.now = readClock
+      delete app.locals.passwordResetDemo
+    })
+
+    it('changes the password once, preserves the profile and revokes only its sessions', async () => {
+      const first = await send('signup', input)
+      const second = await send('login', input)
+      const other = await send('signup', account('UnrelatedRecovery'))
+      const profile = (await send('profile', { ...first.data.profile, major: 'Computer Science' }, first.cookie)).data
+      const unknown = await request('unknown@example.test')
+      expect(unknown).to.include({ status: 202 })
+      expect(await request(other.data.profile.email)).to.deep.equal(unknown)
+      expect(link).to.equal(undefined)
+      const known = await request(' ' + input.email.toUpperCase() + ' ')
+      expect(known).to.deep.equal(unknown)
+      expect(known.data).to.deep.equal({ ok: true })
+      expect(link).to.match(/#\/reset-password\?token=/)
+      const token = tokenFromLink()
+      expect((await reset(token, 'mismatch')).status).to.equal(400)
+      expect((await send('profile', undefined, first.cookie)).data).to.deep.equal(profile)
+      const attempts = await Promise.all([reset(token), reset(token)])
+      expect(attempts.map(result => result.status).sort()).to.deep.equal([200, 400])
+      expect(attempts.find(result => result.status === 200)).to.deep.equal({ status: 200, data: { ok: true }, cookie: null })
+      expect((await reset(token)).data).to.deep.equal(attempts.find(result => result.status === 400).data)
+      expect((await send('login', input)).status).to.equal(401)
+      const recovered = await send('login', { ...input, password: 'new-password' })
+      expect(recovered.data.profile).to.deep.equal(profile)
+      for (const { cookie } of [first, second]) expect((await send('profile', profile, cookie)).status).to.equal(401)
+      expect((await send('profile', undefined, other.cookie)).data).to.deep.equal(other.data.profile)
+      link = undefined
+      await request(input.email)
+      expect(link).to.be.a('string')
+    })
+
+    it('enforces the resend cooldown and rejects superseded and expired links', async () => {
+      await send('signup', input)
+      await request(input.email)
+      const first = tokenFromLink()
+      now += 59_999
+      expect((await request(input.email)).data).to.deep.equal({ ok: true })
+      expect(tokenFromLink()).to.equal(first)
+      now += 1
+      await request(input.email)
+      const second = tokenFromLink()
+      expect(second).not.to.equal(first)
+      expect((await reset(first)).status).to.equal(400)
+      now += 15 * 60_000
+      expect((await reset(second)).status).to.equal(400)
+      expect((await send('login', input)).status).to.equal(200)
+    })
+
+    it('rejects invalid input, unsupported methods and requests when the demo is off', async () => {
+      expect((await request('invalid')).status).to.equal(400)
+      expect((await reset({})).status).to.equal(400)
+      for (const path of ['forgot-password', 'reset-password']) expect((await send(path)).status).to.equal(405)
+      delete app.locals.passwordResetDemo
+      expect((await request(input.email)).status).to.equal(503)
+      expect((await reset('not-a-token')).status).to.equal(503)
+      expect(link).to.equal(undefined)
+    })
+  })
+
   it('creates a canonical blank profile from signup and keeps it on reload', async () => {
     const input = account('Signup')
     const created = await send('signup', input)

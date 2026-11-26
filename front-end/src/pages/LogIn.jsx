@@ -43,6 +43,7 @@ function LogIn() {
           {submitting ? 'Logging in…' : 'Log In'}
         </button>
       </form>
+      <p className="auth-switch"><a href="#/forgot-password">Forgot password?</a></p>
       <p className="auth-switch">Don&apos;t have an account? <a href="#/signup">Sign up</a></p>
     </section>
   )
