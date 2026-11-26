@@ -7,6 +7,7 @@ import {
   postApplicationUpdate,
   deleteApplication,
   getDiscussions,
+  createDiscussionPost,
   getMatch,
   getProfile,
   logIn as postLogIn,
@@ -18,7 +19,6 @@ import {
 function AppState(props) {
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
-  const [original, setOriginal] = useState(null)
   const [profile, setProfile] = useState(null)
   const [applications, setApplications] = useState([])
   const applicationWriteQueues = useRef(new Map())
@@ -36,8 +36,6 @@ function AppState(props) {
         if (!profile || !Array.isArray(applications) || !Array.isArray(posts)) {
           throw new Error('Required CareerHive data is missing')
         }
-        const firstCopy = { profile, applications, posts }
-        setOriginal(structuredClone(firstCopy))
         if (version === profileVersion.current) setProfile(profile)
         setApplications(applications)
         setPosts(posts)
@@ -147,22 +145,13 @@ function AppState(props) {
     return true
   }
 
-  function addPost(jobId, post) {
-    const nextPost = {
-      id: 'post-' + crypto.randomUUID(),
-      jobId: jobId,
-      topic: post.topic,
-      body: post.body,
-      anonymous: Boolean(post.anonymous),
-      author: post.author,
-      createdAt: new Date().toISOString(),
-    }
-    setPosts((previous) => [nextPost, ...previous])
+  async function addPost(jobId, post) {
+    const saved = await createDiscussionPost(jobId, post)
+    setPosts((previous) => [saved, ...previous])
   }
 
   async function resetAll() {
     await changeAccount(postLogOut)
-    if (original) setPosts(structuredClone(original.posts))
   }
 
   const matchFor = useCallback(async (jobId, options) => {

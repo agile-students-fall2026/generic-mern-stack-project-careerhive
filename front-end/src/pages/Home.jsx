@@ -108,7 +108,7 @@ function Home() {
 
     return (
         <section className="home">
-            <h1>Home</h1>
+            <h1 tabIndex={-1}>Home</h1>
             <div className="home-heading">
             <h2>Upcoming deadlines</h2>
                 <a className="home-link" href="#/deadlines">See all</a>

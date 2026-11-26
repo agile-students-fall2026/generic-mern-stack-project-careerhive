@@ -162,7 +162,7 @@ function App() {
       ) : path === '/deadlines' ? (
         <Deadlines />
       ) : discussionMatch ? (
-        <Discussion jobId={discussionMatch[1]} />
+        <Discussion key={discussionMatch[1]} jobId={discussionMatch[1]} />
       ) : route.kind === 'browse' ? (
         <BrowseJobs jobs={current.data ?? []} status={current.status} onRetry={retry} getJobHref={getJobHref}
           filters={browseFilters} onFiltersChange={setBrowseFilters} profile={appState.profile}

@@ -96,7 +96,7 @@ function Deadlines() {
 
     return (
         <section className="deadlines">
-            <h1>Deadlines</h1>
+            <h1 tabIndex={-1}>Deadlines</h1>
             <div className="deadline-tabs">
                 <button type="button" className={tab === 'week' ? 'ui-button' : 'ui-button ui-button-secondary'} onClick={() => setTab('week')}>This week</button>
                 <button type="button" className={tab === 'month' ? 'ui-button' : 'ui-button ui-button-secondary'} onClick={() => setTab('month')}>This month</button>

@@ -84,7 +84,8 @@ async function click(text) {
 async function type(input, text) {
   assert.ok(input)
   await act(async () => {
-    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, text)
+    const prototype = input.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype
+    Object.getOwnPropertyDescriptor(prototype, 'value').set.call(input, text)
     input.dispatchEvent(new window.Event('input', { bubbles: true })); await tick()
   })
 }
@@ -97,6 +98,44 @@ async function submit(values) {
 }
 const signup = name => submit({ 'signup-name': name, 'signup-email': name + '@example.test',
   'signup-password': 'demo-password', 'signup-confirm': 'demo-password' })
+
+test('discussion posts await Express, preserve failed drafts and survive a fresh read', async () => {
+  await mount(); await waitFor(() => state.status === 'ready')
+  await signup('DiscussionWriter'); await waitFor(() => window.location.hash === '#/profile-setup')
+  let jobs
+  await act(async () => { jobs = await (await fetch('/api/jobs')).json() })
+  const path = '/api/discussions/' + jobs[0].id
+  await navigate('/jobs/' + jobs[0].id + '/discussion')
+  await click('New Post')
+  await type(document.querySelector('#new-post-body'), 'A synthetic discussion update.')
+  const count = state.posts.length
+  const send = globalThis.fetch
+  let release, attempts = 0, fail = true
+  globalThis.fetch = (url, options = {}) => {
+    if (url === path && options.method === 'POST') {
+      attempts++
+      if (fail) return new Promise(resolve => { release = resolve })
+    }
+    return send(url, options)
+  }
+  await click('Post')
+  assert.equal(attempts, 1)
+  assert.equal(document.querySelector('#new-post-body').disabled, true)
+  assert.equal(state.posts.length, count)
+  await act(async () => release(new Response(JSON.stringify({ error: 'Posting unavailable' }), { status: 503 })))
+  await waitFor(() => document.body.textContent.includes('Posting unavailable'))
+  assert.equal(document.querySelector('#new-post-body').value, 'A synthetic discussion update.')
+  assert.equal(state.posts.length, count)
+  fail = false; await click('Post')
+  await waitFor(() => !document.querySelector('#new-post-body'))
+  assert.equal(state.posts.length, count + 1)
+  assert.equal(state.posts[0].author, 'DiscussionWriter')
+  let saved
+  await act(async () => { saved = await (await fetch(path)).json() })
+  assert.equal(saved[0].id, state.posts[0].id)
+  assert.equal(saved[0].body, 'A synthetic discussion update.')
+  assert.ok(calls.includes('POST ' + path))
+})
 
 const field = name => document.querySelector(`[name="${name}"]`)
 async function select(name, value) {

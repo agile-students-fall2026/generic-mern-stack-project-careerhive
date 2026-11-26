@@ -73,6 +73,14 @@ export function getDiscussion(jobId) {
   return request('/api/discussions/' + encodeURIComponent(jobId))
 }
 
+export async function createDiscussionPost(jobId, input) {
+  const saved = await post('/api/discussions/' + encodeURIComponent(jobId), input)
+  if (!saved || saved.jobId !== jobId || typeof saved.id !== 'string' || typeof saved.body !== 'string') {
+    throw new Error('Invalid discussion response')
+  }
+  return saved
+}
+
 export async function getMatch(jobId, profile, options) {
   const match = await post('/api/matches/' + encodeURIComponent(jobId), { profile }, options)
   const strings = (items) => Array.isArray(items) && items.every((item) => typeof item === 'string')

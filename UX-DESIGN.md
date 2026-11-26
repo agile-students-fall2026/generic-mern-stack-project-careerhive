@@ -283,6 +283,8 @@ Where the user manages a single application.
 
 A pop-up for moving the application to a different stage. The current stage is selected when it opens. After tapping "Update", the new stage and today's date are added to the stage history.
 
+The React stage and removal pop-ups use native modal dialogs: Cancel/Escape preserves the record and restores focus. Controls wait for Express; a failed write retains the draft and shows an error. Tracker cards and Application Details reuse the shared controls and square surfaces.
+
 <img src="./ux-design/wireframes-18-application-details-update-stage.drawio.png" alt="Update Stage wireframe" width="300">
 
 #### 19. Application Details with Remove Confirmation
