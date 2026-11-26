@@ -116,6 +116,19 @@ export function logOut() {
   return accountRequest('/api/logout', {})
 }
 
+export function requestPasswordReset(email) {
+  return passwordRecoveryRequest('/api/forgot-password', { email })
+}
+
+export function resetPassword(input) {
+  return passwordRecoveryRequest('/api/reset-password', input)
+}
+
+async function passwordRecoveryRequest(path, input) {
+  const data = await post(path, input)
+  if (data?.ok !== true) throw new Error('Could not complete password recovery. Please try again.')
+}
+
 async function accountRequest(path, body) {
   const data = await post(path, body)
   const profile = data?.profile

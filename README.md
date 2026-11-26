@@ -103,6 +103,8 @@ Run the back end and `npm run dev` in `front-end/` at the same time. Vite forwar
 
 To serve built files from Express, run `npm run build` in `front-end/`, then `npm start` in `back-end/` and open http://localhost:3000. Express serves the built app and startup APIs. Discussion posts require sign-in and survive page reloads while Express remains running; database persistence belongs to Sprint 3. Whole-sprint acceptance remains tracked in #130.
 
+For the Sprint 2 password reset demo, build the frontend and run `PASSWORD_RESET_DEMO=1 npm start` in `back-end/`. Open `http://127.0.0.1:3000`, sign up as `reset-demo@example.test` with a test password, then sign out and select **Forgot password?**. Open the reset link printed in the backend terminal, set a new password, and log in again. The demo listens only on loopback and is off by default. Restarting Express clears the demo account, sessions and reset links. Real email delivery is planned for Sprint 3.
+
 ## Repository Structure
 
 ```

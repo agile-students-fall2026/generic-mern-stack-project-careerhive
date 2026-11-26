@@ -99,6 +99,65 @@ async function submit(values) {
 const signup = name => submit({ 'signup-name': name, 'signup-email': name + '@example.test',
   'signup-password': 'demo-password', 'signup-confirm': 'demo-password' })
 
+test('requests and completes password recovery through Express with retry and link errors', async () => {
+  const email = 'ui-recovery@example.test'
+  let link, release, requestCount = 0, resetCount = 0
+  const held = new Promise(resolve => { release = resolve })
+  const fetchThroughVite = globalThis.fetch
+  app.locals.passwordResetDemo = { email, origin, deliver: url => { link = url } }
+  globalThis.fetch = async (path, options) => {
+    if (path === '/api/forgot-password' && ++requestCount === 1) {
+      await held
+      return Response.json({ error: 'Please try again.' }, { status: 503 })
+    }
+    if (path === '/api/reset-password') {
+      resetCount++
+      assert.deepEqual(Object.keys(JSON.parse(options.body)).sort(), ['confirmPassword', 'password', 'token'])
+    }
+    return fetchThroughVite(path, options)
+  }
+
+  try {
+    await fetchThroughVite('/api/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'UI Recovery', email, password: 'demo-password' }) })
+    await mount()
+    await navigate('/login')
+    await click('Forgot password?')
+    await waitFor(() => document.querySelector('h1')?.textContent === 'Forgot Password')
+    await submit({ 'recovery-email': email })
+    assert.equal(document.querySelector('button[type="submit"]').disabled, true)
+    release()
+    await waitFor(() => document.querySelector('[role="alert"]')?.textContent === 'Please try again.')
+    assert.equal(document.getElementById('recovery-email').value, email)
+    await click('Send reset link')
+    await waitFor(() => document.querySelector('[role="status"]')?.textContent.includes('check your inbox'))
+    assert.ok(calls.includes('POST /api/forgot-password'))
+
+    await navigate('/reset-password')
+    assert.ok(document.querySelector('a[href="#/forgot-password"]'))
+    assert.equal(document.querySelector('form'), null)
+    await navigate('/reset-password?token=invalid')
+    const passwords = { 'recovery-password': 'new-password', 'recovery-confirm': 'new-password' }
+    await submit({ ...passwords, 'recovery-confirm': 'different' })
+    assert.equal(resetCount, 0)
+    assert.match(document.querySelector('[role="alert"]').textContent, /match/i)
+    await submit(passwords)
+    await waitFor(() => document.querySelector('[role="alert"]')?.textContent.includes('invalid or has expired'))
+    await navigate(new URL(link).hash.slice(1))
+    assert.equal(document.getElementById('recovery-password').value, '')
+    await submit(passwords)
+    await waitFor(() => document.querySelector('[role="status"]')?.textContent.includes('password has been reset'))
+    assert.equal(resetCount, 2)
+    assert.equal(document.querySelector('form'), null)
+    await click('Log In')
+    await waitFor(() => window.location.hash === '#/login')
+  } finally {
+    release()
+    delete app.locals.passwordResetDemo
+    globalThis.fetch = fetchThroughVite
+  }
+})
+
 test('discussion posts await Express, preserve failed drafts and survive a fresh read', async () => {
   await mount(); await waitFor(() => state.status === 'ready')
   await signup('DiscussionWriter'); await waitFor(() => window.location.hash === '#/profile-setup')

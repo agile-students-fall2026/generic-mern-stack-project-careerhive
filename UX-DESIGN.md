@@ -109,6 +109,7 @@ Returning users log in with their email and password.
 
 - After a successful login, the user goes to **Home**.
 - "Sign up" at the bottom goes to **Sign Up**.
+- **Forgot password?** opens an email form with a generic confirmation. A single-use link opens **Reset Password**, where users enter and confirm a new password. An unusable link offers a new request. After a reset, users return to **Log In**. Sprint 2 demonstrates this flow with local simulated delivery as described in the [README](./README.md#running-the-back-end).
 
 <img src="./ux-design/wireframes-02-log-in.drawio.png" alt="Log In wireframe" width="300">
 
